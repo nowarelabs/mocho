@@ -1,0 +1,12 @@
+.direnv/*
+!.direnv/.keep
+
+result
+result-*
+
+node_modules/
+.next/
+dist/
+target/
+_build/
+deps/

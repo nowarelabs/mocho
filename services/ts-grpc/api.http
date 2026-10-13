@@ -1,0 +1,11 @@
+### Say
+proto < proto/echo.proto
+
+GRPC grpc://127.0.0.1:50050/echo.Echo/Say
+
+{
+  "message": "hello-ts-grpc"
+}
+
+?? status equals 0
+?? body message equals echo: hello-ts-grpc

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SERVICE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$SERVICE_ROOT"
+
+exec env PORT="${PORT:-50050}" node src/server.ts

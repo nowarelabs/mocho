@@ -1,0 +1,7 @@
+### home
+GET http://127.0.0.1:3000/
+
+HTTP/1.1 200
+
+?? status equals 200
+?? header content-type includes text/html
