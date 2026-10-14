@@ -164,9 +164,9 @@
             echo "------------------------------------------------------------"
             echo " Mocho Monorepo Ready"
             echo " Start all:   mesh"
-            echo " Start one:   <service>   (mocho, node-app, go-app, ...)"
+            echo " Start one:   <service>   (${lib.concatStringsSep ", " serviceNames})"
             echo " Install:     install"
-            echo " Workspace:   devspace"
+            echo " Tests:       apitest"
             echo "------------------------------------------------------------"
           '';
         };
