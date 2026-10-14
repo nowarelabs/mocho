@@ -5,20 +5,20 @@ let
   nodejs = prev.nodejs_24;
 
   nextAppSrc = lib.fileset.toSource {
-    root = /. + builtins.unsafeDiscardStringContext (src + "/services/next-app");
-    fileset = /. + builtins.unsafeDiscardStringContext (src + "/services/next-app");
+    root = /. + builtins.unsafeDiscardStringContext (src + "/services/pos-app");
+    fileset = /. + builtins.unsafeDiscardStringContext (src + "/services/pos-app");
   };
 
   pnpmDeps = prev.fetchPnpmDeps {
-    pname = "next-app";
+    pname = "pos-app";
     version = "0.1.0";
     src = nextAppSrc;
     fetcherVersion = 4;
     hash = "sha256-J4U06zepu0Ik/UOY1H9ZA2idi9EZy8qegxmpURtpbmY=";
   };
 
-  next-app = prev.stdenv.mkDerivation {
-    pname = "next-app";
+  pos-app = prev.stdenv.mkDerivation {
+    pname = "pos-app";
     version = "0.1.0";
 
     src = nextAppSrc;
@@ -37,11 +37,11 @@ let
 
     installPhase = ''
       runHook preInstall
-      mkdir -p $out/libexec/next-app $out/bin
-      cp -r . $out/libexec/next-app/
-      chmod -R u+w $out/libexec/next-app
-      chmod +x $out/libexec/next-app/bin/* 2>/dev/null || true
-      makeWrapper $out/libexec/next-app/bin/next-app $out/bin/next-app \
+      mkdir -p $out/libexec/pos-app $out/bin
+      cp -r . $out/libexec/pos-app/
+      chmod -R u+w $out/libexec/pos-app
+      chmod +x $out/libexec/pos-app/bin/* 2>/dev/null || true
+      makeWrapper $out/libexec/pos-app/bin/pos-app $out/bin/pos-app \
         --prefix PATH : ${lib.makeBinPath [ nodejs ]} \
         --set PORT "3000"
       runHook postInstall
@@ -49,11 +49,11 @@ let
 
     meta = {
       description = "Next.js service";
-      mainProgram = "next-app";
+      mainProgram = "pos-app";
       platforms = lib.platforms.unix;
     };
   };
 in
 {
-  inherit next-app;
+  inherit pos-app;
 }

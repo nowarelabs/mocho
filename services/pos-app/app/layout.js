@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "next-app",
+  title: "pos-app",
 };
 
 export default function RootLayout({ children }) {

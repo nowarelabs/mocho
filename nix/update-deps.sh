@@ -19,15 +19,7 @@ FAKE='"sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="'
 
 kind() {
   case "$1" in
-    ruby-app|rails-app|ruby-grpc) echo ruby;;
-    next-app|react-app|ts-express|ts-grpc) echo pnpm;;
-    php-slim|php-grpc) echo composer;;
-    clojure-app|clojure-compojure|clojure-grpc) echo clojure;;
-    java-spring|java-grpc|scala-grpc) echo maven;;
-    scala-http4s) echo sbt;;
-    kotlin-ktor|kotlin-grpc) echo gradle;;
-    csharp-app|csharp-aspnet|csharp-grpc) echo dotnet;;
-    go-gin|go-grpc) echo go;;
+    pos-app|ts-grpc) echo pnpm;;
     *) echo none;;
   esac
 }
@@ -115,14 +107,7 @@ update_one() {
 
 if [ "$1" = "--all" ]; then
   for svc in \
-    ruby-app rails-app ruby-grpc \
-    next-app react-app ts-express ts-grpc \
-    php-slim php-grpc \
-    clojure-app clojure-compojure clojure-grpc \
-    java-spring java-grpc scala-grpc scala-http4s \
-    kotlin-ktor kotlin-grpc \
-    csharp-app csharp-aspnet csharp-grpc \
-    go-gin go-grpc
+    pos-app ts-grpc
   do
     update_one "$svc"
   done

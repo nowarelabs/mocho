@@ -22,7 +22,7 @@ let
         --add-flags "start -f $out/share/Procfile" \
         --prefix PATH : ${
           lib.makeBinPath [
-            final.next-app
+            final.pos-app
             final.ts-grpc
           ]
         }

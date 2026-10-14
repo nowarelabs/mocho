@@ -11,10 +11,10 @@ overlay, plus a single orchestrator that boots them all on distinct ports.
 
 ## Services
 
-| Service    | Runtime     | Port  | Dev launcher |
-| ---------- | ----------- | ----- | ------------ |
-| `next-app` | Next.js     | 3000  | `next-app`   |
-| `ts-grpc`  | Node / gRPC | 50050 | `ts-grpc`    |
+| Service   | Runtime     | Port  | Dev launcher |
+| --------- | ----------- | ----- | ------------ |
+| `pos-app` | Next.js     | 3000  | `pos-app`    |
+| `ts-grpc` | Node / gRPC | 50050 | `ts-grpc`    |
 
 Each service lives in `services/<name>/` and ships its own launcher at
 `services/<name>/bin/<name>`. Checked-in payloads go under `vendor/<name>/`.
