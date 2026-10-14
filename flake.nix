@@ -54,6 +54,7 @@
         packages = servicePackages // {
           default = pkgs.mesh;
           mesh = pkgs.mesh;
+          workerd = pkgs.workerd;
           update-deps = pkgs.writeShellScriptBin "update-deps" ''
             export PATH="${pkgs.nix}/bin:/usr/bin:/bin:/usr/sbin:/sbin"
             exec bash ${./nix/update-deps.sh} "$@"
@@ -84,6 +85,7 @@
             pkgs.stdenv.cc
             pkgs.gnumake
             pkgs.pkg-config
+            pkgs.workerd
           ];
 
           commands = [
