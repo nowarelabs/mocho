@@ -4,7 +4,7 @@ let
   inherit (prev) lib;
   nodejs = prev.nodejs_24;
 
-  nextAppSrc = lib.fileset.toSource {
+  appSrc = lib.fileset.toSource {
     root = /. + builtins.unsafeDiscardStringContext (src + "/services/pos-app");
     fileset = /. + builtins.unsafeDiscardStringContext (src + "/services/pos-app");
   };
@@ -12,22 +12,26 @@ let
   pnpmDeps = prev.fetchPnpmDeps {
     pname = "pos-app";
     version = "0.1.0";
-    src = nextAppSrc;
+    src = appSrc;
     fetcherVersion = 4;
-    hash = "sha256-J4U06zepu0Ik/UOY1H9ZA2idi9EZy8qegxmpURtpbmY=";
+    hash = "sha256-4eFUHi+dZYcVVZ/qNpJR5Ji/r9WMG0rQkxjvxZAStag=";
   };
 
   pos-app = prev.stdenv.mkDerivation {
     pname = "pos-app";
     version = "0.1.0";
 
-    src = nextAppSrc;
+    src = appSrc;
 
-    nativeBuildInputs = [ nodejs prev.pnpm prev.pnpmConfigHook prev.makeWrapper ];
+    nativeBuildInputs = [
+      nodejs
+      prev.pnpm
+      prev.pnpmConfigHook
+      prev.makeWrapper
+      final.esbuild
+    ];
 
     inherit pnpmDeps;
-
-    NEXT_TELEMETRY_DISABLED = "1";
 
     buildPhase = ''
       runHook preBuild
@@ -42,13 +46,13 @@ let
       chmod -R u+w $out/libexec/pos-app
       chmod +x $out/libexec/pos-app/bin/* 2>/dev/null || true
       makeWrapper $out/libexec/pos-app/bin/pos-app $out/bin/pos-app \
-        --prefix PATH : ${lib.makeBinPath [ nodejs ]} \
+        --prefix PATH : ${lib.makeBinPath [ nodejs final.workerd ]} \
         --set PORT "3000"
       runHook postInstall
     '';
 
     meta = {
-      description = "Next.js service";
+      description = "Cap'n Web frontend running on workerd";
       mainProgram = "pos-app";
       platforms = lib.platforms.unix;
     };

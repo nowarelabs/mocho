@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node src/server.ts",
-    "start": "node src/server.ts"
+    "build": "esbuild src/worker.ts --bundle --format=esm --platform=browser --conditions=workerd --external:cloudflare:workers --outfile=build/worker.js",
+    "dev": "pnpm build && workerd serve workerd.capnp --socket-addr http=*:${PORT:-50050}",
+    "start": "workerd serve workerd.capnp --socket-addr http=*:${PORT:-50050}"
   },
   "dependencies": {
-    "@grpc/grpc-js": "1.12.5",
-    "@grpc/proto-loader": "0.7.13"
+    "capnweb": "0.12.0"
   },
   "devDependencies": {
     "@types/node": "22.10.2",

@@ -1,7 +1,13 @@
 ### home
 GET http://127.0.0.1:3000/
 
-HTTP/1.1 200
-
 ?? status equals 200
 ?? header content-type includes text/html
+?? body includes pos-app
+
+### bundled capnweb client
+GET http://127.0.0.1:3000/app.js
+
+?? status equals 200
+?? header content-type includes text/javascript
+?? body includes capnweb

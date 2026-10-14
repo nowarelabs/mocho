@@ -76,9 +76,9 @@
           packages = [
             pkgs.nodejs_24
             pkgs.pnpm
+            pkgs.esbuild
             pkgs.typescript
             pkgs.typescript-language-server
-            pkgs.protobuf
             pkgs.foreman
             pkgs.httpyac
             pkgs.zellij

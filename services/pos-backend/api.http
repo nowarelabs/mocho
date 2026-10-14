@@ -1,11 +1,11 @@
-### Say
-proto < proto/echo.proto
+### Say (Cap'n Web HTTP batch)
+# Newline-delimited Cap'n Web wire messages. The two lines push the
+# `say("hello-pos-backend")` call (import id 1) and pull its result. The body
+# must NOT end in a newline, or the transport sees an empty trailing message.
+POST http://127.0.0.1:50050/api
 
-GRPC grpc://127.0.0.1:50050/echo.Echo/Say
+["push",["pipeline",0,["say"],["hello-pos-backend"]]]
+["pull",1]
 
-{
-  "message": "hello-pos-backend"
-}
-
-?? status equals 0
-?? body message equals echo: hello-pos-backend
+?? status equals 200
+?? body includes echo: hello-pos-backend

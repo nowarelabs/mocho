@@ -11,10 +11,10 @@ overlay, plus a single orchestrator that boots them all on distinct ports.
 
 ## Services
 
-| Service       | Runtime     | Port  | Dev launcher  |
-| ------------- | ----------- | ----- | ------------- |
-| `pos-app`     | Next.js     | 3000  | `pos-app`     |
-| `pos-backend` | Node / gRPC | 50050 | `pos-backend` |
+| Service       | Runtime                 | Port  | Dev launcher  |
+| ------------- | ----------------------- | ----- | ------------- |
+| `pos-app`     | workerd (Cap'n Web app) | 3000  | `pos-app`     |
+| `pos-backend` | workerd (Cap'n Web RPC) | 50050 | `pos-backend` |
 
 Each service lives in `services/<name>/` and ships its own launcher at
 `services/<name>/bin/<name>`. Checked-in payloads go under `vendor/<name>/`.
@@ -26,7 +26,7 @@ can be executed with [httpyac](https://httpyac.github.io/).
 Run one service (needs that service running, e.g. via `mesh`):
 
 ```bash
-httpyac services/react-app/api.http --all
+httpyac services/pos-app/api.http --all
 ```
 
 Run every service's tests at once:
@@ -36,10 +36,12 @@ mesh &          # boot all services
 apitest         # runs every services/<name>/api.http via httpyac
 ```
 
-gRPC files load the shared `echo.proto` via `proto < proto/echo.proto` and call
-`echo.Echo/Say` on their port, asserting the status code and echoed `message`.
-HTTP files assert status, `content-type`, and the expected JSON body fields,
-so a non-zero exit proves the API isn't behaving as expected.
+`pos-backend` exposes a Cap'n Web service (`say(message)`) at `/api` over both
+HTTP batch and WebSocket. Its `api.http` posts the newline-delimited Cap'n Web
+wire messages for a `say` call and asserts the echoed result; `pos-app`'s fetches
+the HTML shell and the bundled Cap'n Web client. Each file asserts status,
+`content-type`, and body contents, so a non-zero exit proves the API isn't
+behaving as expected.
 
 ## Quick start
 
@@ -94,6 +96,11 @@ Run `menu` inside the shell to list every command.
 
 - `nix build` / `nix run` only see git-tracked files. `git add` new sources
   before building.
-- Node 24 runs TypeScript directly via native type stripping, so `mocho` has no
-  separate build step.
-- Port 5000 is reserved by macOS AirPlay, so `go-app` defaults to 8080.
+- Both services are Cap'n Web peers running on `workerd`. `pnpm build` bundles
+  each service with `esbuild` (worker + browser client) into `build/`, and the
+  `bin/<service>` launchers build on demand then `workerd serve workerd.capnp`.
+- `pos-app`'s browser client connects to `pos-backend` over Cap'n Web WebSocket
+  at `ws://127.0.0.1:50050/api`, set by the `BACKEND_URL` binding in
+  `services/pos-app/workerd.capnp`.
+- `pos-backend` serves the `say(message)` RPC at `/api`, handling HTTP batch and
+  WebSocket with a single `newWorkersRpcResponse()` call.

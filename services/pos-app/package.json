@@ -2,14 +2,15 @@
   "name": "pos-app",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "build:client": "esbuild client/app.js --bundle --format=esm --platform=browser --outfile=build/app.js",
+    "build:worker": "esbuild src/worker.ts --bundle --format=esm --platform=browser --conditions=workerd --external:cloudflare:workers --external:app.js --outfile=build/worker.js",
+    "build": "pnpm build:client && pnpm build:worker",
+    "dev": "pnpm build && workerd serve workerd.capnp --socket-addr http=*:${PORT:-3000}",
+    "start": "workerd serve workerd.capnp --socket-addr http=*:${PORT:-3000}"
   },
   "dependencies": {
-    "next": "15.1.0",
-    "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "capnweb": "0.12.0"
   }
 }
