@@ -14,7 +14,7 @@ let
     version = "0.1.0";
     src = nextAppSrc;
     fetcherVersion = 4;
-    hash = "sha256-+Q9okjyJK1wYOl8YMUI7Px6gLUx//i/eIHJ5npQXKoo=";
+    hash = "sha256-J4U06zepu0Ik/UOY1H9ZA2idi9EZy8qegxmpURtpbmY=";
   };
 
   next-app = prev.stdenv.mkDerivation {
