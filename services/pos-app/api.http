@@ -3,7 +3,7 @@ GET http://127.0.0.1:3000/
 
 ?? status equals 200
 ?? header content-type includes text/html
-?? body includes pos-app
+?? body includes mocho-app
 
 ### runtime config
 GET http://127.0.0.1:3000/config.json
