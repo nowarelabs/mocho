@@ -7,23 +7,25 @@ interface Env {
   BACKEND_URL: string;
 }
 
+const NO_STORE = { "cache-control": "no-store" };
+
 export default {
   fetch(request: Request, env: Env): Response {
     const url = new URL(request.url);
 
     if (url.pathname === "/app.js") {
       return new Response(appJs, {
-        headers: { "content-type": "text/javascript; charset=utf-8" },
+        headers: { "content-type": "text/javascript; charset=utf-8", ...NO_STORE },
       });
     }
 
     if (url.pathname === "/config.json") {
-      return Response.json({ backendUrl: env.BACKEND_URL });
+      return Response.json({ backendUrl: env.BACKEND_URL }, { headers: NO_STORE });
     }
 
     if (url.pathname === "/") {
       return new Response(indexHtml, {
-        headers: { "content-type": "text/html; charset=utf-8" },
+        headers: { "content-type": "text/html; charset=utf-8", ...NO_STORE },
       });
     }
 
