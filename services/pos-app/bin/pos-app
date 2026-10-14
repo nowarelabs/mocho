@@ -6,7 +6,7 @@ cd "$SERVICE_ROOT"
 
 PORT="${PORT:-3000}"
 
-if [ ! -f build/worker.js ] || [ ! -f build/app.js ]; then
+if [ -w . ]; then
   pnpm build
 fi
 

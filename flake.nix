@@ -93,10 +93,14 @@
               name = "mesh";
               category = "monorepo";
               help = "Run every nix-built service binary via foreman";
-              # Use the `mesh` derivation so the Procfile resolves `pos-app` /
-              # `pos-backend` to the nix-built binaries, whose ports are baked in
-              # by makeWrapper (foreman's injected PORT cannot override them).
-              command = "${pkgs.mesh}/bin/mesh \"$@\"";
+              # Rebuild before running: `pkgs.mesh` below is only the snapshot
+              # from shell entry, so without this `mesh` keeps serving an old
+              # store path after you edit sources. `nix build` re-evaluates the
+              # current tree; result-mesh is gitignored via the `result-*` rule.
+              command = ''
+                nix build "$PRJ_ROOT#mesh" --out-link "$PRJ_ROOT/result-mesh"
+                exec "$PRJ_ROOT/result-mesh/bin/mesh" "$@"
+              '';
             }
             {
               name = "install";

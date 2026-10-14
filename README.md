@@ -88,10 +88,18 @@ Run `menu` inside the shell to list every command.
 ## Notes
 
 - `nix build` / `nix run` only see git-tracked files. `git add` new sources
-  before building.
+  before building, otherwise Nix keeps building the previous tree.
+- **Never serving stale code:** the `bin/<service>` launchers always run
+  `pnpm build` when the checkout is writable, so editing `src/` takes effect on
+  the next start (the installed Nix copies are read-only and pre-built, so they
+  skip that). `mesh` runs `nix build .#mesh` before launching, so it never reuses
+  the store path that was baked in when the shell was entered — no `direnv reload`
+  needed. `workerd` reads `embed` files once at startup, so restart it after
+  editing them, and responses carry `cache-control: no-store` so the browser
+  cannot hold on to an old document.
 - Both services are Cap'n Web peers running on `workerd`. `pnpm build` bundles
-  each service with `esbuild` (worker + browser client) into `build/`, and the
-  `bin/<service>` launchers build on demand then `workerd serve workerd.capnp`.
+  each service with `esbuild` (worker + browser client) into `build/`, and
+  `workerd serve workerd.capnp` serves it.
 - `pos-app`'s browser client connects to `pos-backend` over Cap'n Web WebSocket
   at `ws://127.0.0.1:50050/api`. The URL comes from the `BACKEND_URL` binding in
   `services/pos-app/workerd.capnp`, exposed as data at `/config.json` (the client
