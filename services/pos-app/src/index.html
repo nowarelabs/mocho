@@ -1,20 +1,917 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>pos-app</title>
-  </head>
-  <body>
-    <main>
-      <h1>pos-app</h1>
-      <p>Cap'n Web client to <code>pos-backend</code>.</p>
-      <form id="echo">
-        <input name="message" value="hello-pos-backend" />
-        <button type="submit">Send</button>
-      </form>
-      <pre id="output"></pre>
-    </main>
-    <script type="module" src="/app.js"></script>
-  </body>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mocho</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Tailwind v4 in the browser, so this file works with no build step. Swap for your compiled CSS later. -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
+
+  <style type="text/tailwindcss">
+    @custom-variant dark (&:is(.dark *));
+
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-sidebar: var(--sidebar);
+        --color-sidebar-border: var(--sidebar-border);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
+        --color-ring: var(--ring);
+        --color-input: var(--input);
+        --color-border: var(--border);
+        --color-destructive: var(--destructive);
+        --color-destructive-foreground: var(--destructive-foreground);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-accent: var(--accent);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-muted: var(--muted);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-secondary: var(--secondary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-primary: var(--primary);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-popover: var(--popover);
+        --color-card-foreground: var(--card-foreground);
+        --color-card: var(--card);
+        --radius-sm: 0.75rem;
+        --radius-md: 1rem;
+        --radius-lg: 1.25rem;
+        --radius-xl: 1.5rem;
+      }
+
+      :root {
+        --card: #ffffff; --ring: #0a0a0a; --input: #e4e4e7; --muted: #f4f4f5; --accent: #f4f4f5;
+        --border: #e4e4e7; --chart-1: #0a0a0a; --chart-2: #85aefa; --chart-3: #10b981; --chart-4: #f59e0b;
+        --chart-5: #06b6d4; --popover: #ffffff; --primary: #0a0a0a; --sidebar: #ffffff; --secondary: #f4f4f5;
+        --background: #ffffff; --foreground: #0a0a0a; --destructive: #ef4444; --sidebar-border: #e4e4e7;
+        --card-foreground: #0a0a0a; --muted-foreground: #71717a; --accent-foreground: #0a0a0a;
+        --popover-foreground: #0a0a0a; --primary-foreground: #ffffff; --secondary-foreground: #0a0a0a;
+        --destructive-foreground: #ffffff;
+      }
+      .dark {
+        --card: #171717; --ring: #ffffff; --input: #27272a; --muted: #27272a; --accent: #27272a;
+        --border: #27272a; --chart-1: #ffffff; --chart-2: #85aefa; --chart-3: #34d399; --chart-4: #fbbf24;
+        --chart-5: #22d3ee; --popover: #171717; --primary: #ffffff; --sidebar: #0a0a0a; --secondary: #27272a;
+        --background: #0a0a0a; --foreground: #fafafa; --destructive: #ef4444; --sidebar-border: #27272a;
+        --card-foreground: #fafafa; --muted-foreground: #a1a1aa; --accent-foreground: #fafafa;
+        --popover-foreground: #fafafa; --primary-foreground: #0a0a0a; --secondary-foreground: #fafafa;
+        --destructive-foreground: #fafafa;
+      }
+
+      @layer base {
+        * { @apply border-border outline-ring/50; }
+        html, body { height: 100%; width: 100%; margin: 0; padding: 0; overscroll-behavior-x: none; }
+        body { @apply bg-background text-foreground; font-family: 'Inter', system-ui, sans-serif; }
+        mocho-app, mocho-sidebar, mocho-register, mocho-cart, mocho-orders, mocho-inventory,
+        mocho-reports, mocho-checkout, mocho-product-form, mocho-toaster { display: block; }
+      }
+
+      @layer components {
+        .btn { @apply inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md px-4 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-40; }
+        .btn-primary { @apply bg-primary text-primary-foreground hover:opacity-90; }
+        .btn-outline { @apply border border-border bg-background hover:bg-accent; }
+        .btn-danger { @apply bg-destructive text-destructive-foreground hover:opacity-90; }
+        .icon-btn { @apply inline-flex size-8 cursor-pointer items-center justify-center rounded-sm border border-border bg-background transition-colors hover:bg-accent focus-visible:outline-2 disabled:pointer-events-none disabled:opacity-40; }
+        .input { @apply h-10 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-0; }
+        .chip { @apply h-9 shrink-0 cursor-pointer rounded-full border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-2 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground; }
+        .badge { @apply inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium; }
+        .dlg { margin: auto; max-height: calc(100dvh - 2rem); @apply overflow-y-auto rounded-xl border border-border bg-card p-0 text-card-foreground shadow-2xl; }
+        .dlg[open] { animation: pop 0.15s ease-out; }
+      }
+
+      dialog::backdrop { background: rgb(0 0 0 / 0.45); }
+      @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+      @media (prefers-reduced-motion: reduce) { .dlg[open], .toast { animation: none !important; } * { transition: none !important; } }
+      @media print {
+        mocho-app, mocho-toaster { display: none !important; }
+        dialog[open] { position: static; box-shadow: none; border: 0; }
+        [data-noprint] { display: none !important; }
+      }
+    </style>
+</head>
+
+<body>
+  <mocho-app></mocho-app>
+  <mocho-checkout></mocho-checkout>
+  <mocho-product-form></mocho-product-form>
+  <mocho-toaster></mocho-toaster>
+
+  <!-- Backend hook: when you're ready, import your Cap'n Web client here and replace the Store methods below. -->
+  <!-- <script type="module" src="/app.js"></script> -->
+
+  <script type="module">
+    /* ==========================================================================
+       Utilities
+       ========================================================================== */
+    const money = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+    const round2 = (n) => Math.round(n * 100) / 100;
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const DAY = 864e5;
+    const fmtTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const dayLabel = (ts) => {
+      const diff = Math.round((startOfDay(new Date()) - startOfDay(new Date(ts))) / DAY);
+      if (diff === 0) return 'Today';
+      if (diff === 1) return 'Yesterday';
+      return new Date(ts).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    };
+
+    const ICONS = {
+      cart: '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+      receipt: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+      box: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+      chart: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+      plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+      minus: '<path d="M5 12h14"/>',
+      trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+      search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+      sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+      moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+      check: '<path d="M20 6 9 17l-5-5"/>',
+      x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+      card: '<rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/>',
+      cash: '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
+      chevron: '<path d="m6 9 6 6 6-6"/>',
+      printer: '<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V2h12v7"/><rect width="12" height="8" x="6" y="14"/>',
+    };
+    const icon = (n, c = 'size-5') =>
+      `<svg class="${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
+
+    /* ==========================================================================
+       Store: all app state lives here. Replace these methods with backend calls later.
+       ========================================================================== */
+    const TAX_RATE = 0.08;
+    const LOW_STOCK = 5;
+
+    const calc = (lines, pct = 0) => {
+      const subtotal = round2(lines.reduce((a, l) => a + l.price * l.qty, 0));
+      const discount = round2((subtotal * pct) / 100);
+      const tax = round2((subtotal - discount) * TAX_RATE);
+      return { subtotal, discount, tax, total: round2(subtotal - discount + tax) };
+    };
+
+    function seedProducts() {
+      const p = (id, name, category, price, stock) => ({ id, name, category, price, stock });
+      return [
+        p('espresso', 'Espresso', 'Coffee', 3.0, 80),
+        p('americano', 'Americano', 'Coffee', 3.5, 80),
+        p('cappuccino', 'Cappuccino', 'Coffee', 4.5, 60),
+        p('latte', 'Latte', 'Coffee', 4.75, 60),
+        p('flat-white', 'Flat white', 'Coffee', 4.5, 50),
+        p('mocha', 'Mocha', 'Coffee', 5.25, 40),
+        p('cold-brew', 'Cold brew', 'Coffee', 4.75, 24),
+        p('chai', 'Chai latte', 'Tea', 4.75, 30),
+        p('matcha', 'Matcha latte', 'Tea', 5.25, 4),
+        p('earl-grey', 'Earl Grey', 'Tea', 3.25, 40),
+        p('croissant', 'Butter croissant', 'Bakery', 3.75, 18),
+        p('pain-choc', 'Pain au chocolat', 'Bakery', 4.25, 12),
+        p('muffin', 'Blueberry muffin', 'Bakery', 3.5, 3),
+        p('banana-bread', 'Banana bread', 'Bakery', 3.95, 10),
+        p('avo-toast', 'Avocado toast', 'Food', 9.5, 14),
+        p('breakfast-sandwich', 'Breakfast sandwich', 'Food', 8.25, 0),
+        p('granola', 'Granola bowl', 'Food', 7.5, 9),
+        p('house-blend', 'House blend, 250g', 'Beans', 14.0, 22),
+        p('single-origin', 'Single origin, 250g', 'Beans', 17.5, 15),
+      ];
+    }
+
+    function seedOrders(products) {
+      let s = 42;
+      const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+      const weights = [3, 5, 3, 2, 4, 5, 3, 2, 2, 3, 2, 1]; // 7am to 6pm
+      const now = new Date();
+      const out = [];
+      for (let d = 6; d >= 0; d--) {
+        const base = new Date(now.getFullYear(), now.getMonth(), now.getDate() - d);
+        for (let h = 7; h <= 18; h++) {
+          if (d === 0 && h > now.getHours()) break;
+          const n = Math.round(weights[h - 7] * (0.6 + rnd() * 0.8));
+          for (let i = 0; i < n; i++) {
+            const at = new Date(base).setHours(h, Math.floor(rnd() * 60));
+            if (at > Date.now()) continue;
+            const items = [];
+            const k = 1 + Math.floor(rnd() * 3);
+            for (let j = 0; j < k; j++) {
+              const p = products[Math.floor(rnd() * rnd() * products.length)];
+              const ex = items.find((x) => x.id === p.id);
+              if (ex) ex.qty++;
+              else items.push({ id: p.id, name: p.name, price: p.price, qty: rnd() < 0.2 ? 2 : 1 });
+            }
+            const t = calc(items, 0);
+            const method = rnd() < 0.62 ? 'card' : 'cash';
+            const tendered = method === 'cash' ? Math.ceil(t.total / 5) * 5 : t.total;
+            out.push({ at, items, ...t, discountPct: 0, method, tendered, change: round2(tendered - t.total), status: rnd() < 0.03 ? 'refunded' : 'paid' });
+          }
+        }
+      }
+      out.sort((a, b) => a.at - b.at).forEach((o, i) => (o.id = 1001 + i));
+      return out;
+    }
+
+    class Store extends EventTarget {
+      constructor() {
+        super();
+        this.view = 'register';
+        this.products = seedProducts();
+        this.orders = seedOrders(this.products);
+        this.nextOrder = this.orders.length ? this.orders[this.orders.length - 1].id + 1 : 1001;
+        this.cart = new Map();
+        this.discount = 0;
+      }
+      emit() { this.dispatchEvent(new Event('change')); }
+      toast(message) { this.dispatchEvent(new CustomEvent('toast', { detail: message })); }
+      product(id) { return this.products.find((p) => p.id === id); }
+      qtyInCart(id) { return this.cart.get(id) || 0; }
+      categories() { return [...new Set(this.products.map((p) => p.category))]; }
+
+      setView(v) { this.view = v; this.emit(); }
+
+      add(id) {
+        const p = this.product(id);
+        const q = this.qtyInCart(id);
+        if (!p || q >= p.stock) return this.toast(`No more ${p?.name ?? 'stock'} available`);
+        this.cart.set(id, q + 1);
+        this.emit();
+      }
+      step(id, d) {
+        const p = this.product(id);
+        const q = this.qtyInCart(id) + d;
+        if (q <= 0) this.cart.delete(id);
+        else if (q > p.stock) return this.toast(`Only ${p.stock} ${p.name} in stock`);
+        else this.cart.set(id, q);
+        this.emit();
+      }
+      clear() { this.cart.clear(); this.discount = 0; this.emit(); }
+      setDiscount(v) { this.discount = Number(v) || 0; this.emit(); }
+      lines() {
+        return [...this.cart].map(([id, qty]) => {
+          const p = this.product(id);
+          return { id, name: p.name, price: p.price, qty };
+        });
+      }
+      totals() { return calc(this.lines(), this.discount); }
+
+      checkout(method, tendered) {
+        const items = this.lines();
+        const t = calc(items, this.discount);
+        items.forEach((l) => (this.product(l.id).stock -= l.qty));
+        const order = {
+          id: this.nextOrder++, at: Date.now(), items, ...t, discountPct: this.discount, method,
+          tendered: method === 'cash' ? tendered : t.total,
+          change: method === 'cash' ? round2(tendered - t.total) : 0,
+          status: 'paid',
+        };
+        this.orders.push(order);
+        this.cart.clear();
+        this.discount = 0;
+        this.emit();
+        return order;
+      }
+      refund(id) {
+        const o = this.orders.find((x) => x.id === id);
+        if (!o || o.status !== 'paid') return;
+        o.status = 'refunded';
+        o.items.forEach((i) => { const p = this.product(i.id); if (p) p.stock += i.qty; });
+        this.emit();
+        this.toast(`Order #${id} refunded`);
+      }
+      setStock(id, n) { const p = this.product(id); p.stock = Math.max(0, Math.floor(Number(n) || 0)); this.emit(); }
+      addProduct({ name, category, price, stock }) {
+        this.products.push({ id: 'p' + Date.now(), name, category, price, stock });
+        this.emit();
+      }
+    }
+    const store = new Store();
+
+    /* ==========================================================================
+       Base element: light DOM so Tailwind utilities and design tokens apply everywhere.
+       Subclasses implement build() once and update() on every store change.
+       ========================================================================== */
+    class MochoElement extends HTMLElement {
+      live = true;
+      connectedCallback() {
+        if (!this._ready) { this._ready = true; this.build?.(); }
+        this.update?.();
+        if (this.live) {
+          this._h = () => this.update?.();
+          store.addEventListener('change', this._h);
+        }
+      }
+      disconnectedCallback() { if (this._h) store.removeEventListener('change', this._h); }
+      $(sel) { return this.querySelector(sel); }
+    }
+
+    /* ---------- <mocho-app>: layout shell and view switching ---------- */
+    const VIEWS = [
+      { id: 'register', label: 'Register', icon: 'cart' },
+      { id: 'orders', label: 'Orders', icon: 'receipt' },
+      { id: 'inventory', label: 'Inventory', icon: 'box' },
+      { id: 'reports', label: 'Reports', icon: 'chart' },
+    ];
+
+    class MochoApp extends MochoElement {
+      build() {
+        this.className = 'flex h-dvh w-full flex-col-reverse md:flex-row';
+        this.innerHTML = `
+            <mocho-sidebar></mocho-sidebar>
+            <main class="min-h-0 min-w-0 flex-1 overflow-y-auto">
+              <mocho-register class="lg:h-full"></mocho-register>
+              <mocho-orders hidden></mocho-orders>
+              <mocho-inventory hidden></mocho-inventory>
+              <mocho-reports hidden></mocho-reports>
+            </main>`;
+        const fromHash = () => {
+          const v = location.hash.slice(1);
+          if (VIEWS.some((x) => x.id === v)) store.setView(v);
+        };
+        addEventListener('hashchange', fromHash);
+        fromHash();
+      }
+      update() {
+        VIEWS.forEach((v) => { this.$(`mocho-${v.id}`).hidden = store.view !== v.id; });
+      }
+    }
+
+    /* ---------- <mocho-sidebar> ---------- */
+    class MochoSidebar extends MochoElement {
+      build() {
+        this.className = 'shrink-0 border-t border-sidebar-border bg-sidebar md:w-60 md:border-t-0 md:border-r';
+        this.addEventListener('click', (e) => {
+          const nav = e.target.closest('[data-view]');
+          if (nav) { location.hash = nav.dataset.view; store.setView(nav.dataset.view); }
+          if (e.target.closest('[data-theme]')) {
+            const dark = document.documentElement.classList.toggle('dark');
+            try { localStorage.setItem('mocho-theme', dark ? 'dark' : 'light'); } catch { }
+            this.update();
+          }
+        });
+        let saved = null;
+        try { saved = localStorage.getItem('mocho-theme'); } catch { }
+        const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark', dark);
+      }
+      update() {
+        const dark = document.documentElement.classList.contains('dark');
+        const item = 'flex flex-1 md:flex-none cursor-pointer flex-col items-center gap-1 rounded-md px-2 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-2 md:flex-row md:gap-3 md:px-3 md:py-2.5 md:text-sm aria-[current=page]:bg-accent aria-[current=page]:text-foreground';
+        this.innerHTML = `
+            <nav class="flex h-full gap-1 p-2 md:flex-col md:p-4" aria-label="Main">
+              <div class="hidden items-center gap-2.5 px-2 pt-1 pb-6 md:flex">
+                <span class="grid size-9 place-items-center rounded-full bg-primary text-lg font-semibold text-primary-foreground">M</span>
+                <span class="text-xl font-semibold tracking-tight">Mocho</span>
+              </div>
+              ${VIEWS.map((v) => `
+                <button data-view="${v.id}" class="${item}" ${store.view === v.id ? 'aria-current="page"' : ''}>
+                  ${icon(v.icon)}<span>${v.label}</span>
+                </button>`).join('')}
+              <button data-theme class="${item} md:mt-auto" aria-label="Switch to ${dark ? 'light' : 'dark'} mode">
+                ${icon(dark ? 'sun' : 'moon')}<span>${dark ? 'Light' : 'Dark'}</span>
+              </button>
+            </nav>`;
+      }
+    }
+
+    /* ---------- <mocho-register>: product grid + cart ---------- */
+    class MochoRegister extends MochoElement {
+      q = '';
+      cat = 'All';
+      build() {
+        this.innerHTML = `
+            <div class="grid grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_24rem] lg:overflow-hidden">
+              <section class="flex min-h-0 flex-col gap-4 p-4 md:p-6" aria-label="Products">
+                <header class="flex flex-wrap items-center justify-between gap-3">
+                  <h1 class="text-2xl font-semibold tracking-tight">Register</h1>
+                  <label class="relative w-full sm:w-72">
+                    <span class="sr-only">Search products</span>
+                    <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
+                    <input id="q" type="search" class="input pl-9" placeholder="Search products" autocomplete="off" />
+                  </label>
+                </header>
+                <div id="cats" class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Categories"></div>
+                <div id="grid" class="grid min-h-0 flex-1 grid-cols-2 content-start gap-3 sm:grid-cols-3 xl:grid-cols-4 lg:overflow-y-auto lg:pb-2"></div>
+                <button id="bar" class="btn btn-primary sticky bottom-3 h-12 justify-between lg:hidden" hidden></button>
+              </section>
+              <mocho-cart id="cart" class="min-h-72 border-t border-border bg-card lg:min-h-0 lg:border-t-0 lg:border-l"></mocho-cart>
+            </div>`;
+        this.$('#q').addEventListener('input', (e) => { this.q = e.target.value.trim().toLowerCase(); this.renderGrid(); });
+        this.addEventListener('click', (e) => {
+          const add = e.target.closest('[data-add]');
+          if (add) store.add(add.dataset.add);
+          const cat = e.target.closest('[data-cat]');
+          if (cat) { this.cat = cat.dataset.cat; this.update(); }
+          if (e.target.closest('#bar')) this.$('#cart').scrollIntoView({ behavior: 'smooth' });
+        });
+      }
+      update() {
+        this.$('#cats').innerHTML = ['All', ...store.categories()]
+          .map((c) => `<button class="chip" data-cat="${esc(c)}" aria-pressed="${this.cat === c}">${esc(c)}</button>`).join('');
+        this.renderGrid();
+        const lines = store.lines();
+        const bar = this.$('#bar');
+        bar.hidden = !lines.length;
+        const n = lines.reduce((a, l) => a + l.qty, 0);
+        bar.innerHTML = `<span>View sale, ${n} ${n === 1 ? 'item' : 'items'}</span><span class="tabular-nums">${money(store.totals().total)}</span>`;
+      }
+      renderGrid() {
+        const list = store.products.filter((p) =>
+          (this.cat === 'All' || p.category === this.cat) && p.name.toLowerCase().includes(this.q));
+        this.$('#grid').innerHTML = list.length
+          ? list.map((p) => {
+            const inCart = store.qtyInCart(p.id);
+            const left = p.stock - inCart;
+            const note = p.stock <= 0 ? 'Sold out' : left <= LOW_STOCK ? `${left} left` : '';
+            return `
+                  <button data-add="${p.id}" ${p.stock <= 0 ? 'disabled' : ''}
+                    class="flex min-h-28 cursor-pointer flex-col justify-between gap-4 rounded-xl border bg-card p-4 text-left transition active:scale-[.98] hover:border-foreground/40 focus-visible:outline-2 disabled:pointer-events-none disabled:opacity-50 ${inCart ? 'border-foreground' : 'border-border'}">
+                    <span class="flex w-full items-start justify-between gap-2">
+                      <span class="leading-snug font-medium">${esc(p.name)}</span>
+                      ${inCart ? `<span class="grid h-6 min-w-6 place-items-center rounded-full bg-chart-2 px-1.5 text-xs font-semibold text-neutral-950">${inCart}</span>` : ''}
+                    </span>
+                    <span class="flex w-full items-end justify-between gap-2">
+                      <span class="font-semibold tabular-nums">${money(p.price)}</span>
+                      <span class="text-xs ${p.stock <= 0 ? 'text-muted-foreground' : 'text-amber-700 dark:text-amber-400'}">${note}</span>
+                    </span>
+                  </button>`;
+          }).join('')
+          : `<p class="col-span-full py-12 text-center text-sm text-muted-foreground">No products match "${esc(this.q)}". Try a different search or category.</p>`;
+      }
+    }
+
+    /* ---------- <mocho-cart> ---------- */
+    class MochoCart extends MochoElement {
+      build() {
+        this.addEventListener('click', (e) => {
+          const step = e.target.closest('[data-step]');
+          if (step) store.step(step.dataset.id, Number(step.dataset.step));
+          if (e.target.closest('[data-clear]')) store.clear();
+          if (e.target.closest('[data-charge]')) store.dispatchEvent(new Event('checkout'));
+        });
+        this.addEventListener('change', (e) => { if (e.target.matches('[data-discount]')) store.setDiscount(e.target.value); });
+      }
+      update() {
+        const lines = store.lines();
+        const t = store.totals();
+        const count = lines.reduce((a, l) => a + l.qty, 0);
+        const row = (label, value, cls = '') => `<div class="flex justify-between text-sm ${cls}"><span>${label}</span><span class="tabular-nums">${value}</span></div>`;
+        this.innerHTML = `
+            <div class="flex h-full flex-col">
+              <header class="flex items-center justify-between gap-2 px-5 pt-5 pb-3">
+                <div>
+                  <h2 class="text-lg font-semibold tracking-tight">Current sale</h2>
+                  <p class="text-sm text-muted-foreground">Order #${store.nextOrder}</p>
+                </div>
+                <button data-clear class="btn btn-outline h-9 px-3" ${lines.length ? '' : 'disabled'}>${icon('trash', 'size-4')}Clear</button>
+              </header>
+              ${lines.length ? `
+                <ul class="flex-1 divide-y divide-border overflow-y-auto px-5">
+                  ${lines.map((l) => `
+                    <li class="flex gap-3 py-3">
+                      <div class="min-w-0 flex-1">
+                        <p class="truncate font-medium">${esc(l.name)}</p>
+                        <p class="text-sm text-muted-foreground tabular-nums">${money(l.price)} each</p>
+                      </div>
+                      <div class="flex flex-col items-end gap-2">
+                        <span class="font-medium tabular-nums">${money(l.price * l.qty)}</span>
+                        <div class="flex items-center gap-1.5">
+                          <button class="icon-btn" data-step="-1" data-id="${l.id}" aria-label="${l.qty === 1 ? 'Remove' : 'Decrease'} ${esc(l.name)}">${icon(l.qty === 1 ? 'trash' : 'minus', 'size-4')}</button>
+                          <span class="w-6 text-center text-sm font-medium tabular-nums" aria-label="Quantity">${l.qty}</span>
+                          <button class="icon-btn" data-step="1" data-id="${l.id}" aria-label="Increase ${esc(l.name)}">${icon('plus', 'size-4')}</button>
+                        </div>
+                      </div>
+                    </li>`).join('')}
+                </ul>` : `
+                <div class="grid flex-1 place-items-center px-8 py-10 text-center">
+                  <div>
+                    <div class="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">${icon('cart')}</div>
+                    <p class="font-medium">No items yet</p>
+                    <p class="mt-1 text-sm text-muted-foreground">Tap a product to add it to this sale.</p>
+                  </div>
+                </div>`}
+              <footer class="space-y-3 border-t border-border p-5">
+                <label class="flex items-center justify-between gap-3 text-sm">
+                  <span>Discount</span>
+                  <select data-discount class="input w-40" ${lines.length ? '' : 'disabled'}>
+                    ${[0, 5, 10, 15, 20].map((v) => `<option value="${v}" ${store.discount === v ? 'selected' : ''}>${v ? v + '% off' : 'None'}</option>`).join('')}
+                  </select>
+                </label>
+                <div class="space-y-1.5">
+                  ${row('Subtotal', money(t.subtotal), 'text-muted-foreground')}
+                  ${t.discount ? row(`Discount (${store.discount}%)`, '−' + money(t.discount), 'text-muted-foreground') : ''}
+                  ${row(`Tax (${(TAX_RATE * 100).toFixed(0)}%)`, money(t.tax), 'text-muted-foreground')}
+                  ${row('Total', money(t.total), 'pt-1 text-lg font-semibold')}
+                </div>
+                <button data-charge class="btn btn-primary h-14 w-full text-base" ${lines.length ? '' : 'disabled'}>
+                  ${lines.length ? `Charge ${money(t.total)}` : 'Charge'}
+                </button>
+              </footer>
+            </div>`;
+      }
+    }
+
+    /* ---------- <mocho-checkout>: payment dialog ---------- */
+    class MochoCheckout extends MochoElement {
+      live = false;
+      state = { step: 'pay', method: 'cash', tendered: '', snap: null, order: null };
+      build() {
+        this.innerHTML = '<dialog class="dlg"></dialog>';
+        this.dlg = this.$('dialog');
+        store.addEventListener('checkout', () => this.open());
+        this.dlg.addEventListener('click', (e) => {
+          if (e.target === this.dlg || e.target.closest('[data-close]')) this.dlg.close();
+          const m = e.target.closest('[data-method]');
+          if (m) { this.state.method = m.dataset.method; this.render(); }
+          const q = e.target.closest('[data-tender]');
+          if (q) { this.state.tendered = q.dataset.tender; this.render(); }
+          if (e.target.closest('[data-pay]')) this.pay();
+          if (e.target.closest('[data-print]')) window.print();
+        });
+        this.dlg.addEventListener('input', (e) => {
+          if (e.target.id === 'tender') { this.state.tendered = e.target.value; this.refreshCash(); }
+        });
+      }
+      open() {
+        const lines = store.lines();
+        if (!lines.length) return;
+        this.state = { step: 'pay', method: 'cash', tendered: '', snap: { lines, ...store.totals(), pct: store.discount }, order: null };
+        this.render();
+        this.dlg.showModal();
+      }
+      get due() { return this.state.snap.total; }
+      get tendered() { return parseFloat(this.state.tendered) || 0; }
+      canPay() { return this.state.method === 'card' || this.tendered >= this.due; }
+      quickAmounts() {
+        const t = this.due;
+        const set = new Set();
+        [5, 10, 20, 50].forEach((s) => { const v = Math.ceil(t / s) * s; if (v > t) set.add(v); });
+        return [...set].slice(0, 3);
+      }
+      refreshCash() {
+        const change = this.$('#change');
+        if (!change) return;
+        change.textContent = money(Math.max(0, round2(this.tendered - this.due)));
+        this.$('[data-pay]').disabled = !this.canPay();
+      }
+      pay() {
+        if (!this.canPay()) return;
+        this.state.order = store.checkout(this.state.method, this.tendered);
+        this.state.step = 'done';
+        this.render();
+        store.toast(`Order #${this.state.order.id} paid`);
+      }
+      render() {
+        const s = this.state;
+        const wrap = 'w-[min(28rem,calc(100vw-2rem))] p-6';
+        if (s.step === 'done') {
+          const o = s.order;
+          this.dlg.innerHTML = `
+              <div class="${wrap} space-y-5">
+                <div class="text-center">
+                  <div class="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-chart-3/15 text-chart-3">${icon('check', 'size-6')}</div>
+                  <h2 class="text-xl font-semibold tracking-tight">Payment complete</h2>
+                  <p class="text-sm text-muted-foreground">Order #${o.id}, ${fmtTime(o.at)}</p>
+                </div>
+                <div class="space-y-1.5 rounded-md bg-muted p-4 text-sm">
+                  ${o.items.map((i) => `<div class="flex justify-between gap-3"><span>${i.qty} × ${esc(i.name)}</span><span class="tabular-nums">${money(i.price * i.qty)}</span></div>`).join('')}
+                  <div class="my-2 border-t border-border"></div>
+                  <div class="flex justify-between text-muted-foreground"><span>Subtotal</span><span class="tabular-nums">${money(o.subtotal)}</span></div>
+                  ${o.discount ? `<div class="flex justify-between text-muted-foreground"><span>Discount</span><span class="tabular-nums">−${money(o.discount)}</span></div>` : ''}
+                  <div class="flex justify-between text-muted-foreground"><span>Tax</span><span class="tabular-nums">${money(o.tax)}</span></div>
+                  <div class="flex justify-between font-semibold"><span>Total, ${o.method}</span><span class="tabular-nums">${money(o.total)}</span></div>
+                  ${o.method === 'cash' ? `<div class="flex justify-between"><span>Change given</span><span class="font-medium tabular-nums">${money(o.change)}</span></div>` : ''}
+                </div>
+                <div class="flex gap-2" data-noprint>
+                  <button data-print class="btn btn-outline flex-1">${icon('printer', 'size-4')}Print receipt</button>
+                  <button data-close class="btn btn-primary flex-1" autofocus>New sale</button>
+                </div>
+              </div>`;
+          return;
+        }
+        const n = s.snap.lines.reduce((a, l) => a + l.qty, 0);
+        const seg = (id, label, ic) => `
+            <button data-method="${id}" aria-pressed="${s.method === id}"
+              class="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-sm text-sm font-medium text-muted-foreground transition-colors aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-sm">${icon(ic, 'size-4')}${label}</button>`;
+        this.dlg.innerHTML = `
+            <div class="${wrap} space-y-5">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h2 class="text-lg font-semibold tracking-tight">Take payment</h2>
+                  <p class="text-sm text-muted-foreground">Order #${store.nextOrder}, ${n} ${n === 1 ? 'item' : 'items'}</p>
+                </div>
+                <button data-close class="icon-btn" aria-label="Close">${icon('x', 'size-4')}</button>
+              </div>
+              <p class="text-4xl font-semibold tracking-tight tabular-nums">${money(this.due)}</p>
+              <div class="grid grid-cols-2 gap-1 rounded-md bg-muted p-1">${seg('cash', 'Cash', 'cash')}${seg('card', 'Card', 'card')}</div>
+              ${s.method === 'cash' ? `
+                <div class="space-y-3">
+                  <label class="block space-y-1.5 text-sm font-medium">Cash received
+                    <input id="tender" class="input h-12 text-lg tabular-nums" inputmode="decimal" placeholder="0.00" value="${esc(s.tendered)}" autocomplete="off" autofocus />
+                  </label>
+                  <div class="flex gap-2">
+                    <button data-tender="${this.due}" class="btn btn-outline h-9 flex-1 px-2">Exact</button>
+                    ${this.quickAmounts().map((v) => `<button data-tender="${v}" class="btn btn-outline h-9 flex-1 px-2 tabular-nums">${money(v).replace('.00', '')}</button>`).join('')}
+                  </div>
+                  <div class="flex items-center justify-between rounded-md bg-muted p-4">
+                    <span class="text-sm text-muted-foreground">Change due</span>
+                    <span id="change" class="text-xl font-semibold tabular-nums">${money(Math.max(0, round2(this.tendered - this.due)))}</span>
+                  </div>
+                </div>` : `
+                <div class="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                  Ask the customer to tap, insert, or swipe their card on the terminal, then confirm below.
+                </div>`}
+              <button data-pay class="btn btn-primary h-12 w-full text-base" ${this.canPay() ? '' : 'disabled'}>${s.method === 'card' ? 'Card approved, complete sale' : 'Complete sale'}</button>
+            </div>`;
+        this.$('#tender')?.focus();
+      }
+    }
+
+    /* ---------- <mocho-orders> ---------- */
+    class MochoOrders extends MochoElement {
+      filter = 'all';
+      open = null;
+      confirming = null;
+      build() {
+        this.addEventListener('click', (e) => {
+          const f = e.target.closest('[data-filter]');
+          if (f) { this.filter = f.dataset.filter; return this.update(); }
+          const row = e.target.closest('[data-row]');
+          if (row) { const id = Number(row.dataset.row); this.open = this.open === id ? null : id; this.confirming = null; return this.update(); }
+          const r = e.target.closest('[data-refund]');
+          if (r) { this.confirming = Number(r.dataset.refund); return this.update(); }
+          if (e.target.closest('[data-cancel]')) { this.confirming = null; return this.update(); }
+          const ok = e.target.closest('[data-confirm]');
+          if (ok) { this.confirming = null; store.refund(Number(ok.dataset.confirm)); }
+        });
+      }
+      update() {
+        const all = [...store.orders].reverse();
+        const list = all.filter((o) => this.filter === 'all' || o.status === this.filter).slice(0, 60);
+        let lastDay = '';
+        this.className = 'block p-4 md:p-6';
+        this.innerHTML = `
+            <div class="mx-auto max-w-4xl space-y-4">
+              <header class="flex flex-wrap items-center justify-between gap-3">
+                <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
+                <div class="flex gap-2" role="group" aria-label="Filter orders">
+                  ${[['all', 'All'], ['paid', 'Paid'], ['refunded', 'Refunded']].map(([v, l]) => `<button class="chip" data-filter="${v}" aria-pressed="${this.filter === v}">${l}</button>`).join('')}
+                </div>
+              </header>
+              ${list.length ? list.map((o) => {
+          const day = dayLabel(o.at);
+          const heading = day !== lastDay ? `<h2 class="pt-3 text-sm font-medium text-muted-foreground">${day}</h2>` : '';
+          lastDay = day;
+          const n = o.items.reduce((a, i) => a + i.qty, 0);
+          const expanded = this.open === o.id;
+          return `${heading}
+                  <article class="overflow-hidden rounded-xl border border-border bg-card">
+                    <button data-row="${o.id}" aria-expanded="${expanded}" class="flex w-full cursor-pointer items-center gap-3 p-4 text-left transition-colors hover:bg-accent focus-visible:outline-2">
+                      <span class="w-16 font-semibold tabular-nums">#${o.id}</span>
+                      <span class="min-w-0 flex-1 text-sm text-muted-foreground"><span class="text-foreground">${fmtTime(o.at)}</span><span class="hidden sm:inline">, ${n} ${n === 1 ? 'item' : 'items'}, ${o.method}</span></span>
+                      <span class="badge ${o.status === 'refunded' ? 'bg-destructive/10 text-destructive' : ''}">${o.status === 'refunded' ? 'Refunded' : 'Paid'}</span>
+                      <span class="w-20 text-right font-medium tabular-nums ${o.status === 'refunded' ? 'text-muted-foreground line-through' : ''}">${money(o.total)}</span>
+                      <span class="text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}">${icon('chevron', 'size-4')}</span>
+                    </button>
+                    ${expanded ? `
+                      <div class="space-y-3 border-t border-border bg-muted/50 p-4 text-sm">
+                        <ul class="space-y-1">
+                          ${o.items.map((i) => `<li class="flex justify-between gap-3"><span>${i.qty} × ${esc(i.name)}</span><span class="tabular-nums">${money(i.price * i.qty)}</span></li>`).join('')}
+                        </ul>
+                        <div class="space-y-1 border-t border-border pt-3 text-muted-foreground">
+                          <div class="flex justify-between"><span>Subtotal</span><span class="tabular-nums">${money(o.subtotal)}</span></div>
+                          ${o.discount ? `<div class="flex justify-between"><span>Discount</span><span class="tabular-nums">−${money(o.discount)}</span></div>` : ''}
+                          <div class="flex justify-between"><span>Tax</span><span class="tabular-nums">${money(o.tax)}</span></div>
+                          <div class="flex justify-between font-medium text-foreground"><span>Total, ${o.method}</span><span class="tabular-nums">${money(o.total)}</span></div>
+                        </div>
+                        ${o.status === 'paid' ? `
+                          <div class="flex justify-end gap-2">
+                            ${this.confirming === o.id
+                  ? `<button data-cancel class="btn btn-outline h-9">Keep order</button><button data-confirm="${o.id}" class="btn btn-danger h-9">Refund ${money(o.total)}</button>`
+                  : `<button data-refund="${o.id}" class="btn btn-outline h-9">Refund order</button>`}
+                          </div>` : ''}
+                      </div>` : ''}
+                  </article>`;
+        }).join('') : '<p class="py-16 text-center text-sm text-muted-foreground">No orders match this filter.</p>'}
+            </div>`;
+      }
+    }
+
+    /* ---------- <mocho-inventory> ---------- */
+    class MochoInventory extends MochoElement {
+      q = '';
+      lowOnly = false;
+      build() {
+        this.className = 'block p-4 md:p-6';
+        this.innerHTML = `
+            <div class="mx-auto max-w-5xl space-y-4">
+              <header class="flex flex-wrap items-center justify-between gap-3">
+                <h1 class="text-2xl font-semibold tracking-tight">Inventory</h1>
+                <button id="add" class="btn btn-primary">${icon('plus', 'size-4')}Add product</button>
+              </header>
+              <div class="flex flex-wrap items-center gap-3">
+                <label class="relative w-full sm:w-72">
+                  <span class="sr-only">Search inventory</span>
+                  <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
+                  <input id="q" type="search" class="input pl-9" placeholder="Search inventory" autocomplete="off" />
+                </label>
+                <button id="low" class="chip" aria-pressed="false"></button>
+              </div>
+              <div class="overflow-x-auto rounded-xl border border-border bg-card">
+                <table class="w-full text-sm">
+                  <thead class="text-left text-muted-foreground">
+                    <tr><th class="px-4 py-3 font-medium">Product</th><th class="hidden px-4 py-3 font-medium sm:table-cell">Category</th><th class="hidden px-4 py-3 text-right font-medium sm:table-cell">Price</th><th class="px-4 py-3 text-right font-medium">In stock</th></tr>
+                  </thead>
+                  <tbody id="rows"></tbody>
+                </table>
+              </div>
+            </div>`;
+        this.$('#q').addEventListener('input', (e) => { this.q = e.target.value.trim().toLowerCase(); this.update(); });
+        this.$('#add').addEventListener('click', () => store.dispatchEvent(new Event('new-product')));
+        this.$('#low').addEventListener('click', () => { this.lowOnly = !this.lowOnly; this.update(); });
+        this.addEventListener('click', (e) => {
+          const b = e.target.closest('[data-adjust]');
+          if (b) store.setStock(b.dataset.id, store.product(b.dataset.id).stock + Number(b.dataset.adjust));
+        });
+        this.addEventListener('change', (e) => { if (e.target.matches('[data-stock]')) store.setStock(e.target.dataset.stock, e.target.value); });
+      }
+      update() {
+        const lowCount = store.products.filter((p) => p.stock <= LOW_STOCK).length;
+        const low = this.$('#low');
+        low.setAttribute('aria-pressed', this.lowOnly);
+        low.textContent = `Low or out of stock (${lowCount})`;
+        const list = store.products.filter((p) => p.name.toLowerCase().includes(this.q) && (!this.lowOnly || p.stock <= LOW_STOCK));
+        this.$('#rows').innerHTML = list.length
+          ? list.map((p) => {
+            const status = p.stock <= 0 ? '<span class="badge bg-destructive/10 text-destructive">Out</span>' : p.stock <= LOW_STOCK ? '<span class="badge bg-amber-500/15 text-amber-700 dark:text-amber-400">Low</span>' : '';
+            return `
+                  <tr class="border-t border-border">
+                    <td class="px-4 py-3"><div class="flex flex-wrap items-center gap-2"><span class="font-medium">${esc(p.name)}</span>${status}</div><div class="text-xs text-muted-foreground sm:hidden">${esc(p.category)}, ${money(p.price)}</div></td>
+                    <td class="hidden px-4 py-3 text-muted-foreground sm:table-cell">${esc(p.category)}</td>
+                    <td class="hidden px-4 py-3 text-right tabular-nums sm:table-cell">${money(p.price)}</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center justify-end gap-1.5">
+                        <button class="icon-btn" data-adjust="-1" data-id="${p.id}" aria-label="Decrease ${esc(p.name)} stock" ${p.stock <= 0 ? 'disabled' : ''}>${icon('minus', 'size-4')}</button>
+                        <input data-stock="${p.id}" type="number" min="0" value="${p.stock}" aria-label="${esc(p.name)} stock" class="input h-8 w-16 px-2 text-center tabular-nums" />
+                        <button class="icon-btn" data-adjust="1" data-id="${p.id}" aria-label="Increase ${esc(p.name)} stock">${icon('plus', 'size-4')}</button>
+                      </div>
+                    </td>
+                  </tr>`;
+          }).join('')
+          : '<tr><td colspan="4" class="px-4 py-12 text-center text-muted-foreground">No products found.</td></tr>';
+      }
+    }
+
+    /* ---------- <mocho-product-form>: add product dialog ---------- */
+    class MochoProductForm extends MochoElement {
+      live = false;
+      build() {
+        store.addEventListener('new-product', () => this.open());
+      }
+      open() {
+        this.innerHTML = `
+            <dialog class="dlg">
+              <form class="w-[min(26rem,calc(100vw-2rem))] space-y-4 p-6" method="dialog">
+                <div class="flex items-start justify-between">
+                  <h2 class="text-lg font-semibold tracking-tight">Add product</h2>
+                  <button type="button" data-close class="icon-btn" aria-label="Close">${icon('x', 'size-4')}</button>
+                </div>
+                <label class="block space-y-1.5 text-sm font-medium">Name<input name="name" class="input" required maxlength="40" autofocus /></label>
+                <label class="block space-y-1.5 text-sm font-medium">Category
+                  <input name="category" class="input" list="cat-list" required maxlength="24" placeholder="Coffee, Bakery, Beans" />
+                  <datalist id="cat-list">${store.categories().map((c) => `<option value="${esc(c)}"></option>`).join('')}</datalist>
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="block space-y-1.5 text-sm font-medium">Price<input name="price" class="input" type="number" min="0" step="0.01" required placeholder="0.00" /></label>
+                  <label class="block space-y-1.5 text-sm font-medium">Starting stock<input name="stock" class="input" type="number" min="0" step="1" value="0" required /></label>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                  <button type="button" data-close class="btn btn-outline">Cancel</button>
+                  <button class="btn btn-primary" value="save">Save product</button>
+                </div>
+              </form>
+            </dialog>`;
+        const dlg = this.$('dialog');
+        dlg.addEventListener('click', (e) => { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
+        dlg.querySelector('form').addEventListener('submit', (e) => {
+          const f = new FormData(e.target);
+          const name = f.get('name').trim();
+          store.addProduct({ name, category: f.get('category').trim(), price: round2(Number(f.get('price'))), stock: Math.floor(Number(f.get('stock'))) });
+          store.toast(`${name} added`);
+        });
+        dlg.showModal();
+      }
+    }
+
+    /* ---------- <mocho-reports> ---------- */
+    class MochoReports extends MochoElement {
+      range = 'today';
+      build() {
+        this.className = 'block p-4 md:p-6';
+        this.addEventListener('click', (e) => {
+          const r = e.target.closest('[data-range]');
+          if (r) { this.range = r.dataset.range; this.update(); }
+        });
+      }
+      update() {
+        const today = startOfDay(new Date());
+        const isToday = this.range === 'today';
+        const from = isToday ? today : today - 6 * DAY;
+        const paid = store.orders.filter((o) => o.status === 'paid' && o.at >= from);
+        const sales = round2(paid.reduce((a, o) => a + o.total, 0));
+        const items = paid.reduce((a, o) => a + o.items.reduce((x, i) => x + i.qty, 0), 0);
+        const avg = paid.length ? sales / paid.length : 0;
+
+        const hourLabel = (h) => (h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`);
+        const buckets = isToday
+          ? Array.from({ length: 12 }, (_, i) => ({ label: hourLabel(7 + i), full: hourLabel(7 + i), value: 0, test: (o) => new Date(o.at).getHours() === 7 + i }))
+          : Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(today - (6 - i) * DAY);
+            return { label: d.toLocaleDateString([], { weekday: 'short' }), full: d.toLocaleDateString([], { weekday: 'long' }), value: 0, test: (o) => startOfDay(new Date(o.at)) === d.getTime() };
+          });
+        paid.forEach((o) => { const b = buckets.find((x) => x.test(o)); if (b) b.value += o.total; });
+        const max = Math.max(...buckets.map((b) => b.value), 1);
+
+        const prod = {};
+        paid.forEach((o) => o.items.forEach((i) => { prod[i.name] ??= { qty: 0, revenue: 0 }; prod[i.name].qty += i.qty; prod[i.name].revenue += i.qty * i.price; }));
+        const top = Object.entries(prod).sort((a, b) => b[1].qty - a[1].qty).slice(0, 6);
+        const topMax = top[0]?.[1].qty || 1;
+        const byMethod = (m) => round2(paid.filter((o) => o.method === m).reduce((a, o) => a + o.total, 0));
+        const cash = byMethod('cash'), card = byMethod('card');
+        const cardPct = sales ? Math.round((card / sales) * 100) : 0;
+
+        const kpi = (label, value) => `<div class="p-5"><p class="text-sm text-muted-foreground">${label}</p><p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">${value}</p></div>`;
+        this.innerHTML = `
+            <div class="mx-auto max-w-5xl space-y-6">
+              <header class="flex flex-wrap items-center justify-between gap-3">
+                <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
+                <div class="flex gap-2" role="group" aria-label="Date range">
+                  <button class="chip" data-range="today" aria-pressed="${isToday}">Today</button>
+                  <button class="chip" data-range="week" aria-pressed="${!isToday}">Last 7 days</button>
+                </div>
+              </header>
+              <div class="grid grid-cols-2 divide-border rounded-xl border border-border bg-card md:grid-cols-4 md:divide-x [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(-n+2)]:border-border md:[&>*]:border-b-0 [&>*:nth-child(odd)]:border-r [&>*:nth-child(odd)]:border-border md:[&>*:nth-child(odd)]:border-r-0">
+                ${kpi('Net sales', money(sales))}${kpi('Orders', paid.length)}${kpi('Average order', money(avg))}${kpi('Items sold', items)}
+              </div>
+              <section class="rounded-xl border border-border bg-card p-5">
+                <h2 class="font-semibold">${isToday ? 'Sales by hour' : 'Sales by day'}</h2>
+                <div class="mt-5 flex h-56 items-stretch gap-1.5 sm:gap-2" role="img" aria-label="Bar chart of ${isToday ? 'hourly' : 'daily'} sales">
+                  ${buckets.map((b) => `
+                    <div class="flex min-w-0 flex-1 flex-col items-center gap-2" title="${b.full}: ${money(b.value)}">
+                      <div class="flex w-full flex-1 items-end"><div class="w-full rounded-sm ${b.value === max && b.value > 0 ? 'bg-primary' : 'bg-chart-2'}" style="height:${b.value ? Math.max(2, (b.value / max) * 100) : 0}%"></div></div>
+                      <span class="text-xs text-muted-foreground">${b.label}</span>
+                    </div>`).join('')}
+                </div>
+              </section>
+              <div class="grid gap-6 md:grid-cols-[3fr_2fr]">
+                <section class="rounded-xl border border-border bg-card p-5">
+                  <h2 class="font-semibold">Top products</h2>
+                  ${top.length ? `<ol class="mt-4 space-y-4">${top.map(([name, v]) => `
+                    <li>
+                      <div class="flex justify-between gap-3 text-sm"><span class="font-medium">${esc(name)}</span><span class="text-muted-foreground tabular-nums">${v.qty} sold, ${money(v.revenue)}</span></div>
+                      <div class="mt-1.5 h-2 rounded-full bg-muted"><div class="h-2 rounded-full bg-chart-2" style="width:${(v.qty / topMax) * 100}%"></div></div>
+                    </li>`).join('')}</ol>` : '<p class="mt-4 text-sm text-muted-foreground">No sales yet. Completed orders will show up here.</p>'}
+                </section>
+                <section class="rounded-xl border border-border bg-card p-5">
+                  <h2 class="font-semibold">Payment methods</h2>
+                  <div class="mt-4 flex h-3 overflow-hidden rounded-full bg-muted"><div class="bg-chart-2" style="width:${cardPct}%"></div><div class="bg-primary" style="width:${sales ? 100 - cardPct : 0}%"></div></div>
+                  <dl class="mt-4 space-y-3 text-sm">
+                    <div class="flex items-center justify-between"><dt class="flex items-center gap-2"><span class="size-2.5 rounded-full bg-chart-2"></span>Card</dt><dd class="font-medium tabular-nums">${money(card)}</dd></div>
+                    <div class="flex items-center justify-between"><dt class="flex items-center gap-2"><span class="size-2.5 rounded-full bg-primary"></span>Cash</dt><dd class="font-medium tabular-nums">${money(cash)}</dd></div>
+                  </dl>
+                </section>
+              </div>
+            </div>`;
+      }
+    }
+
+    /* ---------- <mocho-toaster> ---------- */
+    class MochoToaster extends MochoElement {
+      live = false;
+      build() {
+        this.className = 'pointer-events-none fixed right-4 bottom-20 z-50 flex flex-col items-end gap-2 md:right-6 md:bottom-6';
+        this.setAttribute('aria-live', 'polite');
+        store.addEventListener('toast', (e) => {
+          const t = document.createElement('div');
+          t.className = 'toast rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg';
+          t.style.animation = 'pop 0.15s ease-out';
+          t.textContent = e.detail;
+          this.append(t);
+          setTimeout(() => t.remove(), 2800);
+        });
+      }
+    }
+
+    for (const [tag, cls] of Object.entries({
+      'mocho-app': MochoApp, 'mocho-sidebar': MochoSidebar, 'mocho-register': MochoRegister, 'mocho-cart': MochoCart,
+      'mocho-checkout': MochoCheckout, 'mocho-orders': MochoOrders, 'mocho-inventory': MochoInventory,
+      'mocho-product-form': MochoProductForm, 'mocho-reports': MochoReports, 'mocho-toaster': MochoToaster,
+    })) customElements.define(tag, cls);
+  </script>
+</body>
+
 </html>
