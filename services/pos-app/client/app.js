@@ -1,6 +1,8 @@
 import { newWebSocketRpcSession } from "capnweb";
 
-const api = newWebSocketRpcSession(window.__BACKEND_URL__);
+const { backendUrl } = await fetch("/config.json").then((res) => res.json());
+
+const api = newWebSocketRpcSession(backendUrl);
 
 const form = document.getElementById("echo");
 const output = document.getElementById("output");

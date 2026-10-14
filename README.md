@@ -93,8 +93,9 @@ Run `menu` inside the shell to list every command.
   each service with `esbuild` (worker + browser client) into `build/`, and the
   `bin/<service>` launchers build on demand then `workerd serve workerd.capnp`.
 - `pos-app`'s browser client connects to `pos-backend` over Cap'n Web WebSocket
-  at `ws://127.0.0.1:50050/api`, set by the `BACKEND_URL` binding in
-  `services/pos-app/workerd.capnp`.
+  at `ws://127.0.0.1:50050/api`. The URL comes from the `BACKEND_URL` binding in
+  `services/pos-app/workerd.capnp`, exposed as data at `/config.json` (the client
+  fetches it), so no value is injected into HTML.
 - `pos-backend` serves the `say(message)` RPC at `/api`, handling HTTP batch and
   WebSocket with a single `newWorkersRpcResponse()` call.
 - `mesh` runs the `mesh` derivation, which wraps `foreman` with the Nix-built

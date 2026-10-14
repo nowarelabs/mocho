@@ -17,9 +17,12 @@ export default {
       });
     }
 
+    if (url.pathname === "/config.json") {
+      return Response.json({ backendUrl: env.BACKEND_URL });
+    }
+
     if (url.pathname === "/") {
-      const html = indexHtml.replaceAll("%%BACKEND_URL%%", JSON.stringify(env.BACKEND_URL));
-      return new Response(html, {
+      return new Response(indexHtml, {
         headers: { "content-type": "text/html; charset=utf-8" },
       });
     }

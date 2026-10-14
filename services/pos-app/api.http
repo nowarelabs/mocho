@@ -5,6 +5,13 @@ GET http://127.0.0.1:3000/
 ?? header content-type includes text/html
 ?? body includes pos-app
 
+### runtime config
+GET http://127.0.0.1:3000/config.json
+
+?? status equals 200
+?? header content-type includes application/json
+?? body includes ws://127.0.0.1:50050/api
+
 ### bundled capnweb client
 GET http://127.0.0.1:3000/app.js
 
