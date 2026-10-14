@@ -17,9 +17,10 @@ overlay, plus a single orchestrator that boots them all on distinct ports.
 | `pos-backend` | workerd (Cap'n Web RPC) | 50050 | `pos-backend` |
 
 Each service lives in `services/<name>/` and ships its own launcher at
-`services/<name>/bin/<name>`. Checked-in payloads go under `vendor/<name>/`.
-Every service also has an `services/<name>/api.http` file (HTTP or gRPC) that
-can be executed with [httpyac](https://httpyac.github.io/).
+`services/<name>/bin/<name>`, which the Nix overlay wraps into a binary with its
+port baked in (`makeWrapper --set PORT ...`). Every service also has an
+`services/<name>/api.http` file that can be executed with
+[httpyac](https://httpyac.github.io/).
 
 ## API tests
 
@@ -46,26 +47,22 @@ behaving as expected.
 ## Quick start
 
 ```bash
-nix develop        # enter the dev shell (all runtimes + foreman + zellij)
+nix develop        # enter the dev shell (all runtimes + foreman)
 install            # pnpm install for every service with a package.json
 mesh               # boot every service at once via foreman (Procfile)
 ```
 
-Inside the shell each service can also be run on its own, e.g. `mocho`,
-`node-app`, `go-app`. `direnv allow` can replace `nix develop` to load the shell
-automatically on `cd`.
+Inside the shell each service can also be run on its own from source, e.g.
+`pos-app`, `pos-backend`. `direnv allow` can replace `nix develop` to load the
+shell automatically on `cd`.
 
 ### Run without the dev shell
 
 ```bash
-nix run .#mesh              # foreman boots every service
-nix run .#mocho             # run a single service
-nix build .#mocho           # build result/bin/mocho
+nix run .#mesh              # foreman boots every nix-built service binary
+nix run .#pos-app           # run a single nix-built binary
+nix build .#pos-app         # build result/bin/pos-app
 ```
-
-Bare services (`mocho`, `node-app`, `go-app`, `rust-grpc`) build with no network
-access. The JavaScript bundlers and Ruby/Elixir services need their lockfile
-hashes filled in before `nix build` will fetch dependencies.
 
 ### Devshell commands
 
@@ -73,10 +70,9 @@ Run `menu` inside the shell to list every command.
 
 | Command     | Purpose                                                |
 | ----------- | ------------------------------------------------------ |
-| `mesh`      | Boot every service with `foreman` (`Procfile`)         |
-| `<service>` | Boot one service (e.g. `mocho`, `go-app`)              |
+| `mesh`      | Boot every nix-built service binary via `foreman`      |
+| `<service>` | Boot one service from source (e.g. `pos-app`)          |
 | `install`   | `pnpm install` for every service with a `package.json` |
-| `devspace`  | Open the Zellij dev workspace (`layout.kdl`)           |
 | `apitest`   | Run every `services/*/api.http` via httpyac            |
 | `menu`      | Print the command menu                                 |
 
@@ -87,10 +83,7 @@ Run `menu` inside the shell to list every command.
 | `flake.nix`                  | composes overlays, packages, apps, and the devshell |
 | `nix/overlays/<service>.nix` | one build recipe per service                        |
 | `Procfile`                   | foreman process table (`name: name`)                |
-| `bin/orchestrator/`          | monorepo-only launcher (`mesh`)                     |
 | `services/<name>/`           | service sources + its `bin/` launcher               |
-| `vendor/<name>/`             | checked-in per-service payloads                     |
-| `layout.kdl`                 | Zellij workspace layout used by `devspace`          |
 
 ## Notes
 
@@ -104,3 +97,8 @@ Run `menu` inside the shell to list every command.
   `services/pos-app/workerd.capnp`.
 - `pos-backend` serves the `say(message)` RPC at `/api`, handling HTTP batch and
   WebSocket with a single `newWorkersRpcResponse()` call.
+- `mesh` runs the `mesh` derivation, which wraps `foreman` with the Nix-built
+  `pos-app` / `pos-backend` binaries on `PATH`. The `Procfile` just names those
+  binaries, and their ports are baked in by `makeWrapper`, so `foreman`'s own
+  `PORT` injection cannot override them. The devshell's `<service>` commands
+  still run the source launchers for live editing.
