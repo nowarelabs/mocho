@@ -92,8 +92,11 @@
             {
               name = "mesh";
               category = "monorepo";
-              help = "Run every service via foreman (dev)";
-              command = "$PRJ_ROOT/bin/orchestrator/mesh \"$@\"";
+              help = "Run every nix-built service binary via foreman";
+              # Use the `mesh` derivation so the Procfile resolves `pos-app` /
+              # `pos-backend` to the nix-built binaries, whose ports are baked in
+              # by makeWrapper (foreman's injected PORT cannot override them).
+              command = "${pkgs.mesh}/bin/mesh \"$@\"";
             }
             {
               name = "install";
@@ -145,14 +148,17 @@
           env = [
             {
               name = "PATH";
+              # Source launchers first so `<service>` runs live code; `mesh`
+              # comes from the devshell command (the nix `mesh` derivation), which
+              # puts the nix-built service binaries on PATH.
               eval =
                 lib.concatMapStringsSep ":" (name: "$PRJ_ROOT/services/${name}/bin") serviceNames
-                + ":$PRJ_ROOT/bin/orchestrator:$PRJ_ROOT/node_modules/.bin:$PATH";
+                + ":$PRJ_ROOT/node_modules/.bin:$PATH";
             }
           ];
 
           devshell.startup.setup-mocho.text = ''
-            chmod +x ./services/*/bin/* ./bin/orchestrator/* 2>/dev/null || true
+            chmod +x ./services/*/bin/* 2>/dev/null || true
 
             echo ""
             echo "------------------------------------------------------------"
