@@ -5,20 +5,20 @@ let
   nodejs = prev.nodejs_24;
 
   tsGrpcSrc = lib.fileset.toSource {
-    root = /. + builtins.unsafeDiscardStringContext (src + "/services/ts-grpc");
-    fileset = /. + builtins.unsafeDiscardStringContext (src + "/services/ts-grpc");
+    root = /. + builtins.unsafeDiscardStringContext (src + "/services/pos-backend");
+    fileset = /. + builtins.unsafeDiscardStringContext (src + "/services/pos-backend");
   };
 
   pnpmDeps = prev.fetchPnpmDeps {
-    pname = "ts-grpc";
+    pname = "pos-backend";
     version = "0.1.0";
     src = tsGrpcSrc;
     fetcherVersion = 4;
     hash = "sha256-s/NVTd3LUQVERd/53EUJCHNjzKwgMiiKBIqvwM8RsOA=";
   };
 
-  ts-grpc = prev.stdenv.mkDerivation {
-    pname = "ts-grpc";
+  pos-backend = prev.stdenv.mkDerivation {
+    pname = "pos-backend";
     version = "0.1.0";
 
     src = tsGrpcSrc;
@@ -31,11 +31,11 @@ let
 
     installPhase = ''
       runHook preInstall
-      mkdir -p $out/libexec/ts-grpc $out/bin
-      cp -r . $out/libexec/ts-grpc/
-      chmod -R u+w $out/libexec/ts-grpc
-      chmod +x $out/libexec/ts-grpc/bin/* 2>/dev/null || true
-      makeWrapper $out/libexec/ts-grpc/bin/ts-grpc $out/bin/ts-grpc \
+      mkdir -p $out/libexec/pos-backend $out/bin
+      cp -r . $out/libexec/pos-backend/
+      chmod -R u+w $out/libexec/pos-backend
+      chmod +x $out/libexec/pos-backend/bin/* 2>/dev/null || true
+      makeWrapper $out/libexec/pos-backend/bin/pos-backend $out/bin/pos-backend \
         --prefix PATH : ${lib.makeBinPath [ nodejs ]} \
         --set PORT "50050"
       runHook postInstall
@@ -43,11 +43,11 @@ let
 
     meta = {
       description = "TypeScript gRPC service";
-      mainProgram = "ts-grpc";
+      mainProgram = "pos-backend";
       platforms = lib.platforms.unix;
     };
   };
 in
 {
-  inherit ts-grpc;
+  inherit pos-backend;
 }

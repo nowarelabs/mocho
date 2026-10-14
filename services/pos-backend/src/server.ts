@@ -33,6 +33,6 @@ server.addService(echo.Echo.service, {
 });
 
 server.bindAsync(`0.0.0.0:${port}`, ServerCredentials.createInsecure(), () => {
-  console.log(`ts-grpc listening on 0.0.0.0:${port}`);
+  console.log(`pos-backend listening on 0.0.0.0:${port}`);
   server.start();
 });

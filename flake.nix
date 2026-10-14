@@ -17,7 +17,7 @@
       let
         serviceNames = [
           "pos-app"
-          "ts-grpc"
+          "pos-backend"
         ];
 
         overlays = [

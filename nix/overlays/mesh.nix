@@ -23,7 +23,7 @@ let
         --prefix PATH : ${
           lib.makeBinPath [
             final.pos-app
-            final.ts-grpc
+            final.pos-backend
           ]
         }
       runHook postInstall

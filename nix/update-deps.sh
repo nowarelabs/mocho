@@ -19,7 +19,7 @@ FAKE='"sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="'
 
 kind() {
   case "$1" in
-    pos-app|ts-grpc) echo pnpm;;
+    pos-app|pos-backend) echo pnpm;;
     *) echo none;;
   esac
 }
@@ -107,7 +107,7 @@ update_one() {
 
 if [ "$1" = "--all" ]; then
   for svc in \
-    pos-app ts-grpc
+    pos-app pos-backend
   do
     update_one "$svc"
   done
