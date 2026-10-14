@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>pos-app</title>
+  </head>
+  <body>
+    <main>
+      <h1>pos-app</h1>
+      <p>Cap'n Web client to <code>pos-backend</code>.</p>
+      <form id="echo">
+        <input name="message" value="hello-pos-backend" />
+        <button type="submit">Send</button>
+      </form>
+      <pre id="output"></pre>
+    </main>
+    <script>window.__BACKEND_URL__ = %%BACKEND_URL%%;</script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

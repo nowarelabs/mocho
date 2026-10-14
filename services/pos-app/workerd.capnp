@@ -19,7 +19,8 @@ const posApp :Workerd.Config = (
 const posAppWorker :Workerd.Worker = (
   modules = [
     (name = "worker", esModule = embed "build/worker.js"),
-    (name = "app.js", text = embed "build/app.js")
+    (name = "app.js", text = embed "build/app.js"),
+    (name = "index.html", text = embed "src/index.html")
   ],
   compatibilityDate = "2026-01-20",
   bindings = [
