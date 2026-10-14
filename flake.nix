@@ -10,8 +10,9 @@
   };
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.workerd.url = "github:Sylvance/workerd.nix";
 
-  outputs = { self, flake-utils, devshell, nixpkgs, ... }:
+  outputs = { self, flake-utils, devshell, nixpkgs, workerd, ... }:
     flake-utils.lib.eachSystem [ "aarch64-darwin" "x86_64-linux" "aarch64-linux" ] (system:
       let
         serviceNames = [
@@ -21,6 +22,7 @@
 
         overlays = [
           devshell.overlays.default
+          workerd.overlays.default
         ] ++ map (name: import (./nix/overlays + "/${name}.nix") { src = self; }) serviceNames ++ [
           (import ./nix/overlays/mesh.nix { src = self; })
         ];
