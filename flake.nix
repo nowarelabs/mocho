@@ -122,6 +122,24 @@
               command = "bash $PRJ_ROOT/nix/update-deps.sh \"$@\"";
             }
             {
+              name = "dbtest";
+              category = "monorepo";
+              help = "Verify each service's SQLite schema and migrations (node:sqlite)";
+              command = ''
+                rc=0
+                for dir in "$PRJ_ROOT"/services/*/; do
+                  name="$(basename "$dir")"
+                  if [ -f "$dir/test/verify-schema.ts" ]; then
+                    echo "==> $name"
+                    if ! node --no-warnings "$dir/test/verify-schema.ts"; then
+                      rc=1
+                    fi
+                  fi
+                done
+                test "$rc" -eq 0
+              '';
+            }
+            {
               name = "apitest";
               category = "monorepo";
               help = "Run every service's api.http via httpyac (needs services running)";
@@ -171,6 +189,7 @@
             echo " Start one:   <service>   (${lib.concatStringsSep ", " serviceNames})"
             echo " Install:     install"
             echo " Tests:       apitest"
+            echo " DB tests:    dbtest"
             echo "------------------------------------------------------------"
           '';
         };

@@ -1,0 +1,73 @@
+graph TD
+    classDef phone fill:#3F3375,stroke:#7D6BB1,stroke-width:2px,color:#FFF;
+    classDef nats fill:#3F3375,stroke:#7D6BB1,stroke-width:2px,color:#FFF;
+    classDef service fill:#10523C,stroke:#1D9A70,stroke-width:2px,color:#FFF;
+    classDef data fill:#4A4A4A,stroke:#7E7E7E,stroke-width:2px,color:#FFF;
+    classDef build fill:#10523C,stroke:#1D9A70,stroke-width:2px,color:#FFF;
+
+    %% --- Deployment Pipeline ---
+    subgraph Pipeline ["Deployment Pipeline (Nix)"]
+        Git["<b>Git repo</b><br>Config + sops-nix secrets"]:::build
+        Nix["<b>Nix build</b><br>One closure per role"]:::build
+        Deploy["<b>Deploy tool</b><br>nixos-rebuild or deploy-rs"]:::build
+        Git --> Nix --> Deploy
+    end
+
+    %% --- Global Backup ---
+    Backup["<b>Backup storage</b><br>Disk, SFTP, S3"]:::data
+
+    %% --- Store A Server ---
+    subgraph StoreA ["Store A Server (NixOS + systemd, one process-compose unit)"]
+        direction TB
+        PhoneA["<b>Phone app</b><br>Android SMS gateway, HTTP"]:::phone
+        BrowserA["<b>Browser POS</b><br>Cashier, store LAN"]:::phone
+        PosAppA["<b>pos-app</b><br>workerd, serves UI"]:::service
+        PosBackendA["<b>pos-backend</b><br>workerd: Bridge + store DO"]:::service
+        StoreDOA["<b>DO SQLite</b><br>live store"]:::data
+        StoreNATSA["<b>Store NATS leaf</b><br>JetStream"]:::nats
+        ExportA["<b>Snapshot export</b><br>dump + PITR"]:::service
+
+        PhoneA -->|"HTTP"| PosBackendA
+        BrowserA -->|"HTTP"| PosAppA
+        BrowserA <-->|"Cap'n Web"| PosBackendA
+        PosBackendA <-->|"JetStream"| StoreNATSA
+        PosBackendA --> StoreDOA
+        StoreDOA --> ExportA
+        ExportA -.->|"Snapshot"| Backup
+        ExportA -.->|"Restore on boot"| StoreDOA
+    end
+
+    %% --- Store B Server (identical architecture) ---
+    subgraph StoreB ["Store B Server (NixOS + systemd)"]
+        direction TB
+        PhoneB["<b>Phone app</b><br>Android SMS gateway, HTTP"]:::phone
+        PosBackendB["<b>pos-backend</b><br>workerd: Bridge + store DO"]:::service
+        StoreDOB["<b>DO SQLite</b><br>live store"]:::data
+        StoreNATSB["<b>Store NATS leaf</b><br>JetStream"]:::nats
+
+        PhoneB -->|"HTTP"| PosBackendB
+        PosBackendB <-->|"JetStream"| StoreNATSB
+        PosBackendB --> StoreDOB
+    end
+
+    %% --- Flagship Server ---
+    subgraph Flagship ["Flagship Server (NixOS + systemd)"]
+        direction TB
+        FlagNATS["<b>NATS hub</b><br>JetStream: SMS, events, config"]:::nats
+        FlagWorkerd["<b>Reports workerd</b><br>totals per store + config source"]:::service
+        FlagDO["<b>Hub DO SQLite</b><br>company totals"]:::data
+        FlagExport["<b>Snapshot export</b><br>dump + PITR"]:::service
+
+        FlagNATS <-->|"events up, config down"| FlagWorkerd
+        FlagWorkerd --> FlagDO
+        FlagDO --> FlagExport
+        FlagExport -.->|"Snapshot"| Backup
+    end
+
+    %% --- Cross-Server & Deploy Connections ---
+    Deploy --> StoreA
+    Deploy --> StoreB
+    Deploy --> Flagship
+
+    StoreNATSA <-->|"leaf, JetStream"| FlagNATS
+    StoreNATSB <-->|"leaf, JetStream"| FlagNATS

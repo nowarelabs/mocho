@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild src/worker.ts --bundle --format=esm --platform=browser --conditions=workerd --external:cloudflare:workers --outfile=build/worker.js",
+    "build": "esbuild src/worker.ts --bundle --format=esm --platform=browser --conditions=workerd --external:cloudflare:workers --loader:.sql=text --outfile=build/worker.js",
+    "verify": "node --no-warnings test/verify-schema.ts",
     "dev": "pnpm build && workerd serve workerd.capnp --socket-addr http=*:${PORT:-50050}",
     "start": "workerd serve workerd.capnp --socket-addr http=*:${PORT:-50050}"
   },
