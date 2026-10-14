@@ -19,6 +19,7 @@ let
       mkdir -p $out/bin $out/share
       cp ${src + "/Procfile"} $out/share/Procfile
       makeWrapper ${prev.foreman}/bin/foreman $out/bin/mesh \
+        --set RUBYOPT "-W0" \
         --add-flags "start -f $out/share/Procfile" \
         --prefix PATH : ${
           lib.makeBinPath [
