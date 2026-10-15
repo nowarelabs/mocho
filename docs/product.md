@@ -788,7 +788,7 @@ SQLite:
 | ---            | ---                   | ---                                                       |
 | name           | TEXT                  |                                                           |
 | ---            | ---                   | ---                                                       |
-| phone          | TEXT                  | UQ, stored in international format (+2547...)             |
+| phone          | TEXT                  | UQ together with store_id, stored in international format (+2547...) |
 | ---            | ---                   | ---                                                       |
 | email          | TEXT, may be empty    |                                                           |
 | ---            | ---                   | ---                                                       |
@@ -855,7 +855,7 @@ SQLite:
 | ---        | ---      | ---                                                 |
 | name       | TEXT     | UQ                                                  |
 | ---        | ---      | ---                                                 |
-| purpose    | TEXT     | receipt, promotion, reminder, alert or other        |
+| purpose    | TEXT     | receipt, payment prompt, promotion, reminder, alert or other |
 | ---        | ---      | ---                                                 |
 | body       | TEXT     | text with variables such as {{name}} and {{amount}} |
 | ---        | ---      | ---                                                 |
@@ -905,7 +905,7 @@ SQLite:
 | ---             | ---                   | ---                                                   |
 | sale_id         | TEXT, may be empty    | FK sales.id, set for a receipt SMS                    |
 | ---             | ---                   | ---                                                   |
-| purpose         | TEXT                  | receipt, promotion, reminder, alert or other          |
+| purpose         | TEXT                  | receipt, payment prompt, promotion, reminder, alert or other |
 | ---             | ---                   | ---                                                   |
 | body            | TEXT                  | the final text after variables are filled in          |
 | ---             | ---                   | ---                                                   |

@@ -120,6 +120,17 @@ deployment; NixOS + systemd matches `project.mermaid`.
 **Consequences.** No plaintext secrets in Git; secrets are injected as files/env
 into the `process-compose` unit.
 
+### D11 — Schema is STRICT, indexed, and append-only-enforced
+**Decision.** All 61 tables are declared `STRICT` (type enforcement); the initial
+schema adds an index for every foreign-key column and the queue/time hot paths,
+and triggers that make the seven "(append-only)" tables reject
+`UPDATE`/`DELETE`. Customers are **store-scoped**: `UNIQUE(store_id, phone)`,
+so the same phone may exist per store and head office de-dupes by phone.
+**Consequences.** Corrections to append-only data must be new rows. Denormalized
+totals (`customers.loyalty_points`, `credit_balance`, `stock_levels.quantity`)
+are updated in the same transaction as their ledger and reconciled nightly.
+`STRICT` must be confirmed supported by workerd's DO SQLite (spike 6).
+
 ## 4. Messaging topology
 
 Store NATS instances are **leaf nodes** connected to the flagship hub. A store
@@ -144,7 +155,8 @@ Already in place (see `services/pos-backend/src`):
 
 - `db/sql.ts` — engine-agnostic `SqlDatabase` (`all`/`run`/`exec`/`transaction`).
 - `db/migrate.ts` + `db/schema/0001_init.sql` — migrations and `schema_migrations`
-  with checksums; all 62 tables from `product.md`.
+  with checksums; all 62 tables from `product.md` plus indexes and the
+  append-only triggers (D11).
 - `models/*` — the thin model wrapper; the only layer that knows SQL. The DO
   will construct `Models` over a `SqlDatabase` backed by `ctx.storage.sql`.
 
@@ -186,6 +198,8 @@ checks and start order (NATS → workerd → export timer). `systemd` starts the
 4. **Subject taxonomy.** Confirm the layout in §4 and stream names.
 5. **Config conflict rules.** How `settings.source = 'head_office'` overrides a
    local value on pushdown, and the reverse on divergence.
+6. **STRICT support in DO SQLite.** Confirm workerd's Durable Object SQLite engine
+   accepts `STRICT` tables (and its SQLite version). Gates D11.
 
 ## 9. References
 

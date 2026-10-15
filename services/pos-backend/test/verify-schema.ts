@@ -162,6 +162,119 @@ try {
     fkRejected = true;
   }
   check("foreign key rejects an unknown store", fkRejected);
+
+  console.log("indexes");
+  const indexCount = Number(
+    (
+      db.all<{ n: number }>(
+        "SELECT count(*) AS n FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_%'",
+      )[0] ?? { n: 0 }
+    ).n,
+  );
+  check("foreign-key / hot-path indexes exist", indexCount >= 100, `got ${indexCount}`);
+  check(
+    "index on sale_lines.sale_id exists",
+    db.all("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_sale_lines_sale_id'").length === 1,
+  );
+
+  console.log("append-only guards");
+  db.run(
+    `INSERT INTO audit_log (id, store_id, user_id, device_id, action, entity_type, entity_id, detail, created_at)
+     VALUES (?, ?, NULL, NULL, ?, ?, NULL, NULL, ?)`,
+    [ulid(now), flagship.id, "login", "users", now],
+  );
+
+  let updateBlocked = false;
+  try {
+    db.run("UPDATE audit_log SET action = 'tampered' WHERE store_id = ?", [flagship.id]);
+  } catch {
+    updateBlocked = true;
+  }
+  check("append-only table rejects UPDATE", updateBlocked);
+
+  let deleteBlocked = false;
+  try {
+    db.run("DELETE FROM audit_log WHERE store_id = ?", [flagship.id]);
+  } catch {
+    deleteBlocked = true;
+  }
+  check("append-only table rejects DELETE", deleteBlocked);
+
+  const auditRows = db.all<{ n: number }>("SELECT count(*) AS n FROM audit_log")[0];
+  check("append-only row survived the blocked edits", Number(auditRows?.n) === 1);
+
+  console.log("strict types");
+  const strictFlag = db.all<{ strict: number }>(
+    "SELECT strict FROM pragma_table_list WHERE name = 'customers'",
+  )[0];
+  check("tables are STRICT", Number(strictFlag?.strict) === 1);
+
+  let strictRejected = false;
+  try {
+    db.run(
+      `INSERT INTO customers
+         (id, store_id, name, phone, email, loyalty_points, credit_limit, credit_balance, sms_opt_in, opted_out_at, created_at, updated_at)
+       VALUES (?, ?, 'Strict Test', '+254700000000', NULL, ?, 0, 0, 1, NULL, ?, ?)`,
+      [ulid(now), flagship.id, "not-a-number", now, now],
+    );
+  } catch {
+    strictRejected = true;
+  }
+  check("STRICT rejects text in an INTEGER column", strictRejected);
+
+  console.log("customer scope");
+  function insertCustomer(storeId: string, phone: string, ts: number): void {
+    db.run(
+      `INSERT INTO customers
+         (id, store_id, name, phone, email, loyalty_points, credit_limit, credit_balance, sms_opt_in, opted_out_at, created_at, updated_at)
+       VALUES (?, ?, 'Customer', ?, NULL, 0, 0, 0, 1, NULL, ?, ?)`,
+      [ulid(ts), storeId, phone, ts, ts],
+    );
+  }
+
+  let crossStoreOk = true;
+  try {
+    insertCustomer(flagship.id, "+254711111111", now + 2);
+    insertCustomer(branch.id, "+254711111111", now + 3);
+  } catch {
+    crossStoreOk = false;
+  }
+  check("same phone allowed in two different stores", crossStoreOk);
+
+  let sameStoreRejected = false;
+  try {
+    insertCustomer(flagship.id, "+254711111111", now + 4);
+  } catch {
+    sameStoreRejected = true;
+  }
+  check("same phone rejected within one store", sameStoreRejected);
+
+  console.log("message purposes");
+  let promptOk = true;
+  try {
+    db.run(
+      `INSERT INTO sms_outbox
+         (id, store_id, customer_id, recipient_phone, template_id, campaign_id, sale_id, purpose, body, status, attempts, last_error, device_id, not_before, queued_at, sent_at)
+       VALUES (?, ?, NULL, ?, NULL, NULL, NULL, 'payment_prompt', ?, 'queued', 0, NULL, NULL, NULL, ?, NULL)`,
+      [ulid(now + 5), flagship.id, "+254711111111", "Pay 100.00 to till 12345 to complete purchase", now + 5],
+    );
+  } catch {
+    promptOk = false;
+  }
+  check("sms_outbox accepts purpose 'payment_prompt'", promptOk);
+
+  let badPurposeRejected = false;
+  try {
+    db.run(
+      `INSERT INTO sms_outbox
+         (id, store_id, customer_id, recipient_phone, template_id, campaign_id, sale_id, purpose, body, status, attempts, last_error, device_id, not_before, queued_at, sent_at)
+       VALUES (?, ?, NULL, ?, NULL, NULL, NULL, 'nonsense', ?, 'queued', 0, NULL, NULL, NULL, ?, NULL)`,
+      [ulid(now + 6), flagship.id, "+254711111112", "x", now + 6],
+    );
+  } catch {
+    badPurposeRejected = true;
+  }
+  check("sms_outbox rejects an unknown purpose", badPurposeRejected);
 } finally {
   raw.close();
   rmSync(dir, { recursive: true, force: true });
