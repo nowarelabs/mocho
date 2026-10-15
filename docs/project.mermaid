@@ -1,6 +1,6 @@
 graph TD
     classDef phone fill:#3F3375,stroke:#7D6BB1,stroke-width:2px,color:#FFF;
-    classDef nats fill:#3F3375,stroke:#7D6BB1,stroke-width:2px,color:#FFF;
+    classDef external fill:#2E2E3A,stroke:#7D6BB1,stroke-width:2px,color:#FFF;
     classDef service fill:#10523C,stroke:#1D9A70,stroke-width:2px,color:#FFF;
     classDef data fill:#4A4A4A,stroke:#7E7E7E,stroke-width:2px,color:#FFF;
     classDef build fill:#10523C,stroke:#1D9A70,stroke-width:2px,color:#FFF;
@@ -16,21 +16,28 @@ graph TD
     %% --- Global Backup ---
     Backup["<b>Backup storage</b><br>Disk, SFTP, S3"]:::data
 
+    %% --- External carrier network ---
+    Carrier["<b>M-Pesa / carrier network</b>"]:::external
+
     %% --- Store A Server ---
     subgraph StoreA ["Store A Server (NixOS + systemd, one process-compose unit)"]
         direction TB
-        PhoneA["<b>Phone app</b><br>Android SMS gateway, HTTP"]:::phone
+        StorePhoneA["<b>Store phone</b><br>Android SMS gateway, HTTP only"]:::phone
+        CustomerPhoneA["<b>Customer phone</b><br>payer; future sister app"]:::external
         BrowserA["<b>Browser POS</b><br>Cashier, store LAN"]:::phone
         PosAppA["<b>pos-app</b><br>workerd, serves UI"]:::service
-        PosBackendA["<b>pos-backend</b><br>workerd: Bridge + store DO"]:::service
-        StoreDOA["<b>DO SQLite</b><br>live store"]:::data
-        StoreNATSA["<b>Store NATS leaf</b><br>JetStream"]:::nats
+        PosBackendA["<b>pos-backend</b><br>workerd: Bridge + store DO + sync"]:::service
+        StoreDOA["<b>DO SQLite</b><br>store records + outbox + cursors"]:::data
         ExportA["<b>Snapshot export</b><br>dump + PITR"]:::service
 
-        PhoneA -->|"HTTP"| PosBackendA
+        CustomerPhoneA -.->|"pay to till (M-Pesa)"| Carrier
+        Carrier -.->|"confirmation SMS"| StorePhoneA
+        StorePhoneA -->|"HTTP POST received SMS"| PosBackendA
+        PosBackendA -->|"HTTP: queued SMS (payment prompt, receipt)"| StorePhoneA
+        StorePhoneA -.->|"SMS to customer"| Carrier
+        Carrier -.->|"SMS"| CustomerPhoneA
         BrowserA -->|"HTTP"| PosAppA
         BrowserA <-->|"Cap'n Web"| PosBackendA
-        PosBackendA <-->|"JetStream"| StoreNATSA
         PosBackendA --> StoreDOA
         StoreDOA --> ExportA
         ExportA -.->|"Snapshot"| Backup
@@ -40,25 +47,22 @@ graph TD
     %% --- Store B Server (identical architecture) ---
     subgraph StoreB ["Store B Server (NixOS + systemd)"]
         direction TB
-        PhoneB["<b>Phone app</b><br>Android SMS gateway, HTTP"]:::phone
-        PosBackendB["<b>pos-backend</b><br>workerd: Bridge + store DO"]:::service
-        StoreDOB["<b>DO SQLite</b><br>live store"]:::data
-        StoreNATSB["<b>Store NATS leaf</b><br>JetStream"]:::nats
+        StorePhoneB["<b>Store phone</b><br>Android SMS gateway, HTTP only"]:::phone
+        PosBackendB["<b>pos-backend</b><br>workerd: Bridge + store DO + sync"]:::service
+        StoreDOB["<b>DO SQLite</b><br>store records + outbox + cursors"]:::data
 
-        PhoneB -->|"HTTP"| PosBackendB
-        PosBackendB <-->|"JetStream"| StoreNATSB
+        StorePhoneB -->|"HTTP"| PosBackendB
+        PosBackendB -->|"HTTP"| StorePhoneB
         PosBackendB --> StoreDOB
     end
 
     %% --- Flagship Server ---
     subgraph Flagship ["Flagship Server (NixOS + systemd)"]
         direction TB
-        FlagNATS["<b>NATS hub</b><br>JetStream: SMS, events, config"]:::nats
-        FlagWorkerd["<b>Reports workerd</b><br>totals per store + config source"]:::service
-        FlagDO["<b>Hub DO SQLite</b><br>company totals"]:::data
+        FlagWorkerd["<b>Reports workerd</b><br>totals per store + config source + sync"]:::service
+        FlagDO["<b>Hub DO SQLite</b><br>company totals + per-store inboxes"]:::data
         FlagExport["<b>Snapshot export</b><br>dump + PITR"]:::service
 
-        FlagNATS <-->|"events up, config down"| FlagWorkerd
         FlagWorkerd --> FlagDO
         FlagDO --> FlagExport
         FlagExport -.->|"Snapshot"| Backup
@@ -69,5 +73,5 @@ graph TD
     Deploy --> StoreB
     Deploy --> Flagship
 
-    StoreNATSA <-->|"leaf, JetStream"| FlagNATS
-    StoreNATSB <-->|"leaf, JetStream"| FlagNATS
+    PosBackendA <-->|"HTTPS sync: events up, config down"| FlagWorkerd
+    PosBackendB <-->|"HTTPS sync: events up, config down"| FlagWorkerd

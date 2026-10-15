@@ -754,7 +754,7 @@ The quantity left in a batch is the sum of stock_movements with that batch_id.
 The server queues every outgoing text from a template, and the phone sends it and reports back.
 
 - Customer records, loyalty points and credit accounts
-- SMS receipts, promotions and payment reminders from templates with variables such as {{name}} and {{amount}}
+- SMS receipts, payment prompts, promotions and payment reminders from templates with variables such as {{name}} and {{amount}}
 - Bulk sends with pacing, delivery status and opt-out handling
 
 Mobile app: fetch queued messages, send them (splitting long texts), report sent or failed for each, and keep to a send rate so Android does not block the app. Optionally receive replies such as STOP.
