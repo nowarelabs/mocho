@@ -705,11 +705,12 @@
       filter = 'all';
       open = null;
       confirming = null;
+      resetScroll = false;
       build() {
         this.className = 'block h-full';
         this.innerHTML = `
             <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
-              <section class="${panelClass('main')}" aria-label="Orders">
+              <section class="min-h-0 flex-col lg:flex" aria-label="Orders">
                 <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
                   <header class="flex flex-wrap items-center justify-between gap-3">
                     <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
@@ -718,7 +719,7 @@
                 </div>
                 <div id="list" class="hide-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6"></div>
               </section>
-              <aside class="${panelClass('side')} bg-card lg:border-l lg:border-border" aria-label="Summary">
+              <aside class="min-h-0 flex-col bg-card lg:flex lg:border-l lg:border-border" aria-label="Summary">
                 <header class="border-b border-border p-5">
                   <h2 class="text-base font-semibold tracking-tight">Summary</h2>
                   <p id="sum-scope" class="mt-0.5 text-xs text-muted-foreground"></p>
@@ -728,7 +729,7 @@
             </div>`;
         this.addEventListener('click', (e) => {
           const f = e.target.closest('[data-filter]');
-          if (f) { this.filter = f.dataset.filter; return this.update(); }
+          if (f) { this.filter = f.dataset.filter; this.resetScroll = true; return this.update(); }
           const row = e.target.closest('[data-row]');
           if (row) { const id = Number(row.dataset.row); this.open = this.open === id ? null : id; this.confirming = null; return this.update(); }
           const r = e.target.closest('[data-refund]');
@@ -748,7 +749,8 @@
         const list = all.filter((o) => this.filter === 'all' || o.status === this.filter).slice(0, 60);
         let lastDay = '';
         const scroller = this.$('#list');
-        const top = scroller.scrollTop;
+        const top = this.resetScroll ? 0 : scroller.scrollTop;
+        this.resetScroll = false;
         scroller.innerHTML = list.length ? list.map((o) => {
           const day = dayLabel(o.at);
           const heading = day !== lastDay ? `<h2 class="pt-3 text-sm font-medium text-muted-foreground">${day}</h2>` : '';
