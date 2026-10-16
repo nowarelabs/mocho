@@ -1,7 +1,7 @@
 # workerd configuration for pos-backend.
 #
 # Exposes the Cap'n Web echo service (src/worker.ts, bundled to build/worker.js
-# by `pnpm build`) over HTTP batch and WebSocket at /api.
+# by `vp run build`) over HTTP batch and WebSocket at /api.
 #
 # The socket address is only a default; the `pos-backend` launcher overrides it
 # with --socket-addr so PORT is honoured.

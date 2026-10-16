@@ -10,9 +10,10 @@
   };
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.vp.url = "github:Sylvance/vp.nix";
   inputs.workerd.url = "github:Sylvance/workerd.nix";
 
-  outputs = { self, flake-utils, devshell, nixpkgs, workerd, ... }:
+  outputs = { self, flake-utils, devshell, nixpkgs, vp, workerd, ... }:
     flake-utils.lib.eachSystem [ "aarch64-darwin" "x86_64-linux" "aarch64-linux" ] (system:
       let
         serviceNames = [
@@ -22,8 +23,9 @@
 
         overlays = [
           devshell.overlays.default
+          vp.overlays.default
           workerd.overlays.default
-        ] ++ map (name: import (./nix/overlays + "/${name}.nix") { src = self; }) serviceNames ++ [
+        ] ++ map (name: import (./nix/overlays + "/${name}.nix") { src = self; inherit vp; }) serviceNames ++ [
           (import ./nix/overlays/mesh.nix { src = self; })
         ];
 
@@ -75,6 +77,7 @@
 
           packages = [
             pkgs.nodejs_24
+            pkgs.vp
             pkgs.pnpm
             pkgs.esbuild
             pkgs.typescript
@@ -109,8 +112,8 @@
               command = ''
                 for dir in "$PRJ_ROOT"/services/*/; do
                   if [ -f "$dir/package.json" ]; then
-                    echo "==> pnpm install in $dir"
-                    (cd "$dir" && pnpm install)
+                    echo "==> vp install in $dir"
+                    (cd "$dir" && vp install)
                   fi
                 done
               '';

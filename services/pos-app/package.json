@@ -6,8 +6,8 @@
   "scripts": {
     "build:client": "esbuild client/app.js --bundle --format=esm --platform=browser --outfile=build/app.js",
     "build:worker": "esbuild src/worker.ts --bundle --format=esm --platform=browser --conditions=workerd --external:cloudflare:workers --external:app.js --external:index.html --outfile=build/worker.js",
-    "build": "pnpm build:client && pnpm build:worker",
-    "dev": "pnpm build && workerd serve workerd.capnp --socket-addr http=*:${PORT:-3000}",
+    "build": "vp run build:client && vp run build:worker",
+    "dev": "vp run build && workerd serve workerd.capnp --socket-addr http=*:${PORT:-3000}",
     "start": "workerd serve workerd.capnp --socket-addr http=*:${PORT:-3000}"
   },
   "dependencies": {

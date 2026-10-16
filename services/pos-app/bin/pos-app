@@ -7,7 +7,7 @@ cd "$SERVICE_ROOT"
 PORT="${PORT:-3000}"
 
 if [ -w . ]; then
-  pnpm build
+  vp run build
 fi
 
 exec workerd serve workerd.capnp --socket-addr "http=*:${PORT}"

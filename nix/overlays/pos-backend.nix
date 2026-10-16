@@ -1,46 +1,48 @@
-{ src }:
+{ src, vp }:
 final: prev:
 let
   inherit (prev) lib;
   nodejs = prev.nodejs_24;
 
-  backendSrc = lib.fileset.toSource {
-    root = /. + builtins.unsafeDiscardStringContext (src + "/services/pos-backend");
-    fileset = /. + builtins.unsafeDiscardStringContext (src + "/services/pos-backend");
+  backendSrc = lib.cleanSourceWith {
+    src = /. + builtins.unsafeDiscardStringContext (src + "/services/pos-backend");
+    filter = path: _type: !(builtins.elem (baseNameOf path) [ "node_modules" "build" ".git" ]);
   };
 
-  pnpmDeps = prev.fetchPnpmDeps {
+  vpDeps = vp.lib.fetchVpDeps {
     pname = "pos-backend";
-    version = "0.1.0";
+    pkgs = prev;
     src = backendSrc;
-    fetcherVersion = 4;
     hash = "sha256-JA7SMFGXuFzss+hdKWErk0bqkXBduT0Nwa32+DEj+jM=";
   };
 
-  pos-backend = prev.stdenv.mkDerivation {
+  pos-backend = vp.lib.buildVpProject {
     pname = "pos-backend";
     version = "0.1.0";
-
+    pkgs = prev;
     src = backendSrc;
-
+    inherit vpDeps;
+    node = nodejs;
+    # vp build/pack cannot target workerd, so the worker bundle stays esbuild.
+    buildScript = "vp run build";
     nativeBuildInputs = [
-      nodejs
-      prev.pnpm
-      prev.pnpmConfigHook
+      prev.esbuild
       prev.makeWrapper
-      final.esbuild
+      final.workerd
     ];
-
-    inherit pnpmDeps;
-
-    buildPhase = ''
-      runHook preBuild
-      pnpm build
-      runHook postBuild
-    '';
-
+    env = {
+      meta = {
+        description = "Cap'n Web service running on workerd";
+        mainProgram = "pos-backend";
+        platforms = lib.platforms.unix;
+      };
+    };
     installPhase = ''
       runHook preInstall
+
+      # The Vite+ home copied in by buildVpProject is build-only.
+      rm -rf .vp-home
+
       mkdir -p $out/libexec/pos-backend $out/bin
       cp -r . $out/libexec/pos-backend/
       chmod -R u+w $out/libexec/pos-backend
@@ -50,12 +52,6 @@ let
         --set PORT "50050"
       runHook postInstall
     '';
-
-    meta = {
-      description = "Cap'n Web service running on workerd";
-      mainProgram = "pos-backend";
-      platforms = lib.platforms.unix;
-    };
   };
 in
 {
