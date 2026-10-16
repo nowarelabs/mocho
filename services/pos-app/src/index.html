@@ -131,6 +131,12 @@
       if (diff === 1) return 'Yesterday';
       return new Date(ts).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
     };
+    const hourLabel = (h) => (h === 0 ? '12a' : h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`);
+    const parseDay = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).getTime(); };
+    const dateValue = (ts) => {
+      const d = new Date(ts);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
     const stat = (label, value, sub = '') => `<div class="flex items-baseline justify-between gap-3"><dt class="text-sm text-muted-foreground">${label}</dt><dd class="text-right font-semibold tabular-nums">${value}${sub ? `<span class="mt-0.5 block text-xs font-normal text-muted-foreground">${sub}</span>` : ''}</dd></div>`;
 
     const ICONS = {
@@ -706,16 +712,45 @@
       open = null;
       confirming = null;
       resetScroll = false;
+      dateFrom = '';
+      dateTo = '';
+      hourFrom = '';
+      hourTo = '';
       build() {
         this.className = 'block h-full';
+        const hourOpts = ['<option value="">Any</option>', ...Array.from({ length: 24 }, (_, h) => `<option value="${h}">${hourLabel(h)}</option>`)].join('');
+        const dateCls = 'h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-2';
+        const hourCls = 'h-9 w-24 cursor-pointer appearance-none rounded-md border border-input bg-background px-3 pr-9 text-sm focus-visible:outline-2';
+        const fieldLabel = 'flex flex-col gap-1 text-xs font-medium text-muted-foreground';
         this.innerHTML = `
             <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
               <section class="min-h-0 flex-col lg:flex" aria-label="Orders">
-                <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
+                <div class="flex flex-col gap-3 p-4 md:p-6 lg:pb-4">
                   <header class="flex flex-wrap items-center justify-between gap-3">
                     <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
                     <div id="filters" class="flex gap-2" role="group" aria-label="Filter orders"></div>
                   </header>
+                  <div class="flex flex-wrap items-end gap-x-3 gap-y-2" role="group" aria-label="Filter by date and time">
+                    <label class="${fieldLabel}">From date
+                      <input id="date-from" name="date-from" type="date" class="${dateCls}" />
+                    </label>
+                    <label class="${fieldLabel}">To date
+                      <input id="date-to" name="date-to" type="date" class="${dateCls}" />
+                    </label>
+                    <label class="${fieldLabel}">From hour
+                      <span class="relative">
+                        <select id="hour-from" name="hour-from" class="${hourCls}">${hourOpts}</select>
+                        <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground">${icon('chevron', 'size-4')}</span>
+                      </span>
+                    </label>
+                    <label class="${fieldLabel}">To hour
+                      <span class="relative">
+                        <select id="hour-to" name="hour-to" class="${hourCls}">${hourOpts}</select>
+                        <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground">${icon('chevron', 'size-4')}</span>
+                      </span>
+                    </label>
+                    <button id="clear-range" class="btn btn-outline h-9 hidden">Clear</button>
+                  </div>
                 </div>
                 <div id="list" class="hide-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6"></div>
               </section>
@@ -728,6 +763,7 @@
               </aside>
             </div>`;
         this.addEventListener('click', (e) => {
+          if (e.target.closest('#clear-range')) return this.clearRange();
           const f = e.target.closest('[data-filter]');
           if (f) { this.filter = f.dataset.filter; this.resetScroll = true; return this.update(); }
           const row = e.target.closest('[data-row]');
@@ -738,15 +774,50 @@
           const ok = e.target.closest('[data-confirm]');
           if (ok) { this.confirming = null; store.refund(Number(ok.dataset.confirm)); }
         });
+        this.addEventListener('change', (e) => { if (e.target.matches('#date-from, #date-to, #hour-from, #hour-to')) this.readRange(); });
+        this.addEventListener('input', (e) => { if (e.target.matches('input[type="date"]')) this.readRange(); });
+      }
+      readRange() {
+        this.dateFrom = this.$('#date-from')?.value ?? '';
+        this.dateTo = this.$('#date-to')?.value ?? '';
+        this.hourFrom = this.$('#hour-from')?.value ?? '';
+        this.hourTo = this.$('#hour-to')?.value ?? '';
+        this.resetScroll = true;
+        this.update();
+      }
+      clearRange() {
+        this.dateFrom = this.dateTo = this.hourFrom = this.hourTo = '';
+        ['#date-from', '#date-to', '#hour-from', '#hour-to'].forEach((id) => { const el = this.$(id); if (el) el.value = ''; });
+        this.resetScroll = true;
+        this.update();
       }
       update() {
         this.togglePanel('section[aria-label="Orders"]', 'main');
         this.togglePanel('aside[aria-label="Summary"]', 'side');
         this.$('#filters').innerHTML = [['all', 'All'], ['paid', 'Paid'], ['refunded', 'Refunded']]
           .map(([v, l]) => `<button class="chip" data-filter="${v}" aria-pressed="${this.filter === v}">${l}</button>`).join('');
+        const rangeActive = !!(this.dateFrom || this.dateTo || this.hourFrom || this.hourTo);
+        this.$('#clear-range').classList.toggle('hidden', !rangeActive);
+
+        let fromTs = this.dateFrom ? parseDay(this.dateFrom) : null;
+        let toTs = this.dateTo ? parseDay(this.dateTo) : null;
+        let hFrom = this.hourFrom !== '' ? Number(this.hourFrom) : null;
+        let hTo = this.hourTo !== '' ? Number(this.hourTo) : null;
+        if (fromTs != null && toTs != null && fromTs > toTs) [fromTs, toTs] = [toTs, fromTs];
+        if (hFrom != null && hTo != null && hFrom > hTo) [hFrom, hTo] = [hTo, hFrom];
 
         const all = [...store.orders].reverse();
-        const list = all.filter((o) => this.filter === 'all' || o.status === this.filter).slice(0, 60);
+        const filtered = all.filter((o) => {
+          if (this.filter !== 'all' && o.status !== this.filter) return false;
+          const d = startOfDay(new Date(o.at));
+          if (fromTs != null && d < fromTs) return false;
+          if (toTs != null && d > toTs) return false;
+          const h = new Date(o.at).getHours();
+          if (hFrom != null && h < hFrom) return false;
+          if (hTo != null && h > hTo) return false;
+          return true;
+        });
+        const list = filtered.slice(0, 60);
         let lastDay = '';
         const scroller = this.$('#list');
         const top = this.resetScroll ? 0 : scroller.scrollTop;
@@ -798,7 +869,9 @@
         const netToday = round2(paidToday.reduce((a, o) => a + o.total, 0));
         const sum = this.$('#sum');
         const sumTop = sum.scrollTop;
-        this.$('#sum-scope').textContent = `${totalOrders} ${totalOrders === 1 ? 'order' : 'orders'} on record`;
+        this.$('#sum-scope').textContent = rangeActive
+          ? `${filtered.length} of ${totalOrders} orders`
+          : `${totalOrders} ${totalOrders === 1 ? 'order' : 'orders'} on record`;
         sum.innerHTML = `
             <section class="space-y-3">
               <h3 class="rail-heading">Sales</h3>
@@ -843,11 +916,16 @@
                     <button id="low" class="chip" aria-pressed="false"></button>
                   </div>
                 </div>
-                <div class="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6">
-                  <div class="overflow-x-auto rounded-xl border border-border bg-card">
+                <div class="min-h-0 flex-1 px-4 pb-4 md:px-6 md:pb-6">
+                  <div class="hide-scrollbar h-full overflow-auto rounded-xl border border-border bg-card">
                     <table class="w-full text-sm">
                       <thead class="text-left text-muted-foreground">
-                        <tr><th class="px-4 py-3 font-medium">Product</th><th class="hidden px-4 py-3 font-medium sm:table-cell">Category</th><th class="hidden px-4 py-3 text-right font-medium sm:table-cell">Price</th><th class="px-4 py-3 text-right font-medium">In stock</th></tr>
+                        <tr>
+                          <th class="sticky top-0 z-10 border-b border-border bg-card px-4 py-3 font-medium">Product</th>
+                          <th class="sticky top-0 z-10 hidden border-b border-border bg-card px-4 py-3 font-medium sm:table-cell">Category</th>
+                          <th class="sticky top-0 z-10 hidden border-b border-border bg-card px-4 py-3 text-right font-medium sm:table-cell">Price</th>
+                          <th class="sticky top-0 z-10 border-b border-border bg-card px-4 py-3 text-right font-medium">In stock</th>
+                        </tr>
                       </thead>
                       <tbody id="rows"></tbody>
                     </table>
@@ -892,7 +970,7 @@
           ? list.map((p) => {
             const status = p.stock <= 0 ? '<span class="badge bg-destructive/10 text-destructive">Out</span>' : p.stock <= LOW_STOCK ? '<span class="badge bg-amber-500/15 text-amber-700 dark:text-amber-400">Low</span>' : '';
             return `
-                  <tr class="border-t border-border">
+                  <tr class="border-b border-border last:border-b-0">
                     <td class="px-4 py-3"><div class="flex flex-wrap items-center gap-2"><span class="font-medium">${esc(p.name)}</span>${status}</div><div class="text-xs text-muted-foreground sm:hidden">${esc(p.category)}, ${money(p.price)}</div></td>
                     <td class="hidden px-4 py-3 text-muted-foreground sm:table-cell">${esc(p.category)}</td>
                     <td class="hidden px-4 py-3 text-right tabular-nums sm:table-cell">${money(p.price)}</td>
@@ -905,7 +983,15 @@
                     </td>
                   </tr>`;
           }).join('')
-          : '<tr><td colspan="4" class="px-4 py-12 text-center text-muted-foreground">No products found.</td></tr>';
+          : `<tr><td colspan="4" class="px-4 py-16">
+                  <div class="grid place-items-center text-center">
+                    <div>
+                      <div class="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">${icon('box')}</div>
+                      <p class="font-medium">No products found</p>
+                      <p class="mt-1 text-sm text-muted-foreground">${this.q ? `Nothing matches “${esc(this.q)}”. Try a different search.` : 'No products match this filter.'}</p>
+                    </div>
+                  </div>
+                </td></tr>`;
         const units = list.reduce((a, p) => a + p.stock, 0);
         const retail = round2(list.reduce((a, p) => a + p.stock * p.price, 0));
         const lowN = list.filter((p) => p.stock > 0 && p.stock <= LOW_STOCK).length;
@@ -992,9 +1078,8 @@
         const items = paid.reduce((a, o) => a + o.items.reduce((x, i) => x + i.qty, 0), 0);
         const avg = paid.length ? sales / paid.length : 0;
 
-        const hourLabel = (h) => (h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`);
         const buckets = isToday
-          ? Array.from({ length: 12 }, (_, i) => ({ label: hourLabel(7 + i), full: hourLabel(7 + i), value: 0, test: (o) => new Date(o.at).getHours() === 7 + i }))
+          ? Array.from({ length: 24 }, (_, h) => ({ label: h % 3 === 0 ? hourLabel(h) : '', full: hourLabel(h), value: 0, test: (o) => new Date(o.at).getHours() === h }))
           : Array.from({ length: 7 }, (_, i) => {
             const d = new Date(today - (6 - i) * DAY);
             return { label: d.toLocaleDateString([], { weekday: 'short' }), full: d.toLocaleDateString([], { weekday: 'long' }), value: 0, test: (o) => startOfDay(new Date(o.at)) === d.getTime() };
@@ -1030,7 +1115,7 @@
                   </div>
                   <section class="rounded-xl border border-border bg-card p-5">
                     <h2 class="font-semibold">${isToday ? 'Sales by hour' : 'Sales by day'}</h2>
-                    <div class="mt-5 flex h-56 items-stretch gap-1.5 sm:gap-2" role="img" aria-label="Bar chart of ${isToday ? 'hourly' : 'daily'} sales">
+                    <div class="mt-5 flex h-56 items-stretch ${isToday ? 'gap-1' : 'gap-1.5 sm:gap-2'}" role="img" aria-label="Bar chart of ${isToday ? 'hourly' : 'daily'} sales">
                       ${buckets.map((b) => `
                         <div class="flex min-w-0 flex-1 flex-col items-center gap-2" title="${b.full}: ${money(b.value)}">
                           <div class="flex w-full flex-1 items-end"><div class="w-full rounded-sm ${b.value === max && b.value > 0 ? 'bg-primary' : 'bg-chart-2'}" style="height:${b.value ? Math.max(2, (b.value / max) * 100) : 0}%"></div></div>
