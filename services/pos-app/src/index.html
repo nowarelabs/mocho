@@ -123,6 +123,7 @@
       if (diff === 1) return 'Yesterday';
       return new Date(ts).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
     };
+    const stat = (label, value, sub = '') => `<div class="flex items-baseline justify-between gap-3"><dt class="text-sm text-muted-foreground">${label}</dt><dd class="text-right font-semibold tabular-nums">${value}${sub ? `<span class="mt-0.5 block text-xs font-normal text-muted-foreground">${sub}</span>` : ''}</dd></div>`;
 
     const ICONS = {
       cart: '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
@@ -652,17 +653,27 @@
       update() {
         const all = [...store.orders].reverse();
         const list = all.filter((o) => this.filter === 'all' || o.status === this.filter).slice(0, 60);
+        const totalOrders = store.orders.length;
+        const gross = round2(store.orders.reduce((a, o) => a + o.total, 0));
+        const paid = store.orders.filter((o) => o.status === 'paid');
+        const refunded = store.orders.filter((o) => o.status === 'refunded');
+        const average = totalOrders ? gross / totalOrders : 0;
+        const today = startOfDay(new Date());
+        const paidToday = paid.filter((o) => o.at >= today);
+        const netToday = round2(paidToday.reduce((a, o) => a + o.total, 0));
         let lastDay = '';
-        this.className = 'block p-4 md:p-6';
+        this.className = 'block lg:h-full';
         this.innerHTML = `
-            <div class="mx-auto max-w-4xl space-y-4">
-              <header class="flex flex-wrap items-center justify-between gap-3">
-                <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
-                <div class="flex gap-2" role="group" aria-label="Filter orders">
-                  ${[['all', 'All'], ['paid', 'Paid'], ['refunded', 'Refunded']].map(([v, l]) => `<button class="chip" data-filter="${v}" aria-pressed="${this.filter === v}">${l}</button>`).join('')}
-                </div>
-              </header>
-              ${list.length ? list.map((o) => {
+            <div class="grid grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_24rem] lg:overflow-hidden">
+              <section class="flex min-h-0 flex-col gap-4 p-4 md:p-6" aria-label="Orders">
+                <header class="flex flex-wrap items-center justify-between gap-3">
+                  <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
+                  <div class="flex gap-2" role="group" aria-label="Filter orders">
+                    ${[['all', 'All'], ['paid', 'Paid'], ['refunded', 'Refunded']].map(([v, l]) => `<button class="chip" data-filter="${v}" aria-pressed="${this.filter === v}">${l}</button>`).join('')}
+                  </div>
+                </header>
+                <div class="min-h-0 flex-1 space-y-3 lg:overflow-y-auto lg:pb-2">
+                  ${list.length ? list.map((o) => {
           const day = dayLabel(o.at);
           const heading = day !== lastDay ? `<h2 class="pt-3 text-sm font-medium text-muted-foreground">${day}</h2>` : '';
           lastDay = day;
@@ -697,6 +708,23 @@
                       </div>` : ''}
                   </article>`;
         }).join('') : '<p class="py-16 text-center text-sm text-muted-foreground">No orders match this filter.</p>'}
+                </div>
+              </section>
+              <aside class="min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Summary">
+                <h2 class="text-sm font-medium text-muted-foreground">Summary</h2>
+                <dl class="mt-4 space-y-3">
+                  ${stat('Orders', totalOrders)}
+                  ${stat('Gross sales', money(gross))}
+                  ${stat('Paid', paid.length)}
+                  ${stat('Refunded', refunded.length)}
+                  ${stat('Average order', money(average))}
+                </dl>
+                <h2 class="mt-6 text-sm font-medium text-muted-foreground">Today</h2>
+                <dl class="mt-4 space-y-3">
+                  ${stat('Net sales', money(netToday))}
+                  ${stat('Paid orders', paidToday.length)}
+                </dl>
+              </aside>
             </div>`;
       }
     }
@@ -706,29 +734,38 @@
       q = '';
       lowOnly = false;
       build() {
-        this.className = 'block p-4 md:p-6';
+        this.className = 'block lg:h-full';
         this.innerHTML = `
-            <div class="mx-auto max-w-5xl space-y-4">
-              <header class="flex flex-wrap items-center justify-between gap-3">
-                <h1 class="text-2xl font-semibold tracking-tight">Inventory</h1>
-                <button id="add" class="btn btn-primary">${icon('plus', 'size-4')}Add product</button>
-              </header>
-              <div class="flex flex-wrap items-center gap-3">
-                <label class="relative w-full sm:w-72">
-                  <span class="sr-only">Search inventory</span>
-                  <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
-                  <input id="q" type="search" class="input pl-9" placeholder="Search inventory" autocomplete="off" />
-                </label>
-                <button id="low" class="chip" aria-pressed="false"></button>
-              </div>
-              <div class="overflow-x-auto rounded-xl border border-border bg-card">
-                <table class="w-full text-sm">
-                  <thead class="text-left text-muted-foreground">
-                    <tr><th class="px-4 py-3 font-medium">Product</th><th class="hidden px-4 py-3 font-medium sm:table-cell">Category</th><th class="hidden px-4 py-3 text-right font-medium sm:table-cell">Price</th><th class="px-4 py-3 text-right font-medium">In stock</th></tr>
-                  </thead>
-                  <tbody id="rows"></tbody>
-                </table>
-              </div>
+            <div class="grid grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_24rem] lg:overflow-hidden">
+              <section class="flex min-h-0 flex-col gap-4 p-4 md:p-6" aria-label="Inventory">
+                <header class="flex flex-wrap items-center justify-between gap-3">
+                  <h1 class="text-2xl font-semibold tracking-tight">Inventory</h1>
+                  <button id="add" class="btn btn-primary">${icon('plus', 'size-4')}Add product</button>
+                </header>
+                <div class="flex flex-wrap items-center gap-3">
+                  <label class="relative w-full sm:w-72">
+                    <span class="sr-only">Search inventory</span>
+                    <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
+                    <input id="q" type="search" class="input pl-9" placeholder="Search inventory" autocomplete="off" />
+                  </label>
+                  <button id="low" class="chip" aria-pressed="false"></button>
+                </div>
+                <div class="min-h-0 flex-1 overflow-x-auto rounded-xl border border-border bg-card lg:overflow-y-auto">
+                  <table class="w-full text-sm">
+                    <thead class="text-left text-muted-foreground">
+                      <tr><th class="px-4 py-3 font-medium">Product</th><th class="hidden px-4 py-3 font-medium sm:table-cell">Category</th><th class="hidden px-4 py-3 text-right font-medium sm:table-cell">Price</th><th class="px-4 py-3 text-right font-medium">In stock</th></tr>
+                    </thead>
+                    <tbody id="rows"></tbody>
+                  </table>
+                </div>
+              </section>
+              <aside class="min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Stock summary">
+                <h2 class="text-sm font-medium text-muted-foreground">Stock</h2>
+                <p id="sum-scope" class="mt-1 text-xs text-muted-foreground"></p>
+                <dl id="sum-stats" class="mt-4 space-y-3"></dl>
+                <h2 class="mt-6 text-sm font-medium text-muted-foreground">By category</h2>
+                <dl id="sum-cats" class="mt-4 space-y-3"></dl>
+              </aside>
             </div>`;
         this.$('#q').addEventListener('input', (e) => { this.q = e.target.value.trim().toLowerCase(); this.update(); });
         this.$('#add').addEventListener('click', () => store.dispatchEvent(new Event('new-product')));
@@ -763,6 +800,24 @@
                   </tr>`;
           }).join('')
           : '<tr><td colspan="4" class="px-4 py-12 text-center text-muted-foreground">No products found.</td></tr>';
+        const units = list.reduce((a, p) => a + p.stock, 0);
+        const retail = round2(list.reduce((a, p) => a + p.stock * p.price, 0));
+        const lowN = list.filter((p) => p.stock > 0 && p.stock <= LOW_STOCK).length;
+        const outN = list.filter((p) => p.stock <= 0).length;
+        this.$('#sum-scope').textContent = this.lowOnly ? 'Low or out of stock' : this.q ? 'Search results' : 'All products';
+        this.$('#sum-stats').innerHTML = [
+          stat('Products', list.length),
+          stat('Units in stock', units),
+          stat('Retail value', money(retail)),
+          stat('Low stock', lowN),
+          stat('Out of stock', outN),
+        ].join('');
+        const cats = {};
+        list.forEach((p) => { (cats[p.category] ??= { count: 0, units: 0 }).count++; cats[p.category].units += p.stock; });
+        const entries = Object.entries(cats).sort((a, b) => b[1].units - a[1].units);
+        this.$('#sum-cats').innerHTML = entries.length
+          ? entries.map(([name, v]) => stat(esc(name), v.units, `${v.count} ${v.count === 1 ? 'product' : 'products'}`)).join('')
+          : '<p class="text-sm text-muted-foreground">Nothing to show.</p>';
       }
     }
 
@@ -811,7 +866,7 @@
     class MochoReports extends MochoElement {
       range = 'today';
       build() {
-        this.className = 'block p-4 md:p-6';
+        this.className = 'block lg:h-full';
         this.addEventListener('click', (e) => {
           const r = e.target.closest('[data-range]');
           if (r) { this.range = r.dataset.range; this.update(); }
@@ -845,46 +900,55 @@
         const cardPct = sales ? Math.round((card / sales) * 100) : 0;
 
         const kpi = (label, value) => `<div class="p-5"><p class="text-sm text-muted-foreground">${label}</p><p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">${value}</p></div>`;
+        const best = buckets.reduce((a, b) => (b.value > a.value ? b : a), buckets[0]);
         this.innerHTML = `
-            <div class="mx-auto max-w-5xl space-y-6">
-              <header class="flex flex-wrap items-center justify-between gap-3">
-                <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
-                <div class="flex gap-2" role="group" aria-label="Date range">
-                  <button class="chip" data-range="today" aria-pressed="${isToday}">Today</button>
-                  <button class="chip" data-range="week" aria-pressed="${!isToday}">Last 7 days</button>
-                </div>
-              </header>
-              <div class="grid grid-cols-2 divide-border rounded-xl border border-border bg-card md:grid-cols-4 md:divide-x [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(-n+2)]:border-border md:[&>*]:border-b-0 [&>*:nth-child(odd)]:border-r [&>*:nth-child(odd)]:border-border md:[&>*:nth-child(odd)]:border-r-0">
-                ${kpi('Net sales', money(sales))}${kpi('Orders', paid.length)}${kpi('Average order', money(avg))}${kpi('Items sold', items)}
-              </div>
-              <section class="rounded-xl border border-border bg-card p-5">
-                <h2 class="font-semibold">${isToday ? 'Sales by hour' : 'Sales by day'}</h2>
-                <div class="mt-5 flex h-56 items-stretch gap-1.5 sm:gap-2" role="img" aria-label="Bar chart of ${isToday ? 'hourly' : 'daily'} sales">
-                  ${buckets.map((b) => `
-                    <div class="flex min-w-0 flex-1 flex-col items-center gap-2" title="${b.full}: ${money(b.value)}">
-                      <div class="flex w-full flex-1 items-end"><div class="w-full rounded-sm ${b.value === max && b.value > 0 ? 'bg-primary' : 'bg-chart-2'}" style="height:${b.value ? Math.max(2, (b.value / max) * 100) : 0}%"></div></div>
-                      <span class="text-xs text-muted-foreground">${b.label}</span>
-                    </div>`).join('')}
+            <div class="grid grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_24rem] lg:overflow-hidden">
+              <section class="flex min-h-0 flex-col gap-4 p-4 md:p-6" aria-label="Reports">
+                <header class="flex flex-wrap items-center justify-between gap-3">
+                  <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
+                  <div class="flex gap-2" role="group" aria-label="Date range">
+                    <button class="chip" data-range="today" aria-pressed="${isToday}">Today</button>
+                    <button class="chip" data-range="week" aria-pressed="${!isToday}">Last 7 days</button>
+                  </div>
+                </header>
+                <div class="min-h-0 flex-1 space-y-6 lg:overflow-y-auto lg:pb-2">
+                  <div class="grid grid-cols-2 divide-border rounded-xl border border-border bg-card md:grid-cols-4 md:divide-x [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(-n+2)]:border-border md:[&>*]:border-b-0 [&>*:nth-child(odd)]:border-r [&>*:nth-child(odd)]:border-border md:[&>*:nth-child(odd)]:border-r-0">
+                    ${kpi('Net sales', money(sales))}${kpi('Orders', paid.length)}${kpi('Average order', money(avg))}${kpi('Items sold', items)}
+                  </div>
+                  <section class="rounded-xl border border-border bg-card p-5">
+                    <h2 class="font-semibold">${isToday ? 'Sales by hour' : 'Sales by day'}</h2>
+                    <div class="mt-5 flex h-56 items-stretch gap-1.5 sm:gap-2" role="img" aria-label="Bar chart of ${isToday ? 'hourly' : 'daily'} sales">
+                      ${buckets.map((b) => `
+                        <div class="flex min-w-0 flex-1 flex-col items-center gap-2" title="${b.full}: ${money(b.value)}">
+                          <div class="flex w-full flex-1 items-end"><div class="w-full rounded-sm ${b.value === max && b.value > 0 ? 'bg-primary' : 'bg-chart-2'}" style="height:${b.value ? Math.max(2, (b.value / max) * 100) : 0}%"></div></div>
+                          <span class="text-xs text-muted-foreground">${b.label}</span>
+                        </div>`).join('')}
+                    </div>
+                  </section>
+                  <section class="rounded-xl border border-border bg-card p-5">
+                    <h2 class="font-semibold">Top products</h2>
+                    ${top.length ? `<ol class="mt-4 space-y-4">${top.map(([name, v]) => `
+                      <li>
+                        <div class="flex justify-between gap-3 text-sm"><span class="font-medium">${esc(name)}</span><span class="text-muted-foreground tabular-nums">${v.qty} sold, ${money(v.revenue)}</span></div>
+                        <div class="mt-1.5 h-2 rounded-full bg-muted"><div class="h-2 rounded-full bg-chart-2" style="width:${(v.qty / topMax) * 100}%"></div></div>
+                      </li>`).join('')}</ol>` : '<p class="mt-4 text-sm text-muted-foreground">No sales yet. Completed orders will show up here.</p>'}
+                  </section>
                 </div>
               </section>
-              <div class="grid gap-6 md:grid-cols-[3fr_2fr]">
-                <section class="rounded-xl border border-border bg-card p-5">
-                  <h2 class="font-semibold">Top products</h2>
-                  ${top.length ? `<ol class="mt-4 space-y-4">${top.map(([name, v]) => `
-                    <li>
-                      <div class="flex justify-between gap-3 text-sm"><span class="font-medium">${esc(name)}</span><span class="text-muted-foreground tabular-nums">${v.qty} sold, ${money(v.revenue)}</span></div>
-                      <div class="mt-1.5 h-2 rounded-full bg-muted"><div class="h-2 rounded-full bg-chart-2" style="width:${(v.qty / topMax) * 100}%"></div></div>
-                    </li>`).join('')}</ol>` : '<p class="mt-4 text-sm text-muted-foreground">No sales yet. Completed orders will show up here.</p>'}
-                </section>
-                <section class="rounded-xl border border-border bg-card p-5">
-                  <h2 class="font-semibold">Payment methods</h2>
-                  <div class="mt-4 flex h-3 overflow-hidden rounded-full bg-muted"><div class="bg-chart-2" style="width:${cardPct}%"></div><div class="bg-primary" style="width:${sales ? 100 - cardPct : 0}%"></div></div>
-                  <dl class="mt-4 space-y-3 text-sm">
-                    <div class="flex items-center justify-between"><dt class="flex items-center gap-2"><span class="size-2.5 rounded-full bg-chart-2"></span>Card</dt><dd class="font-medium tabular-nums">${money(card)}</dd></div>
-                    <div class="flex items-center justify-between"><dt class="flex items-center gap-2"><span class="size-2.5 rounded-full bg-primary"></span>Cash</dt><dd class="font-medium tabular-nums">${money(cash)}</dd></div>
-                  </dl>
-                </section>
-              </div>
+              <aside class="min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Highlights">
+                <h2 class="text-sm font-medium text-muted-foreground">Highlights</h2>
+                <dl class="mt-4 space-y-3">
+                  ${stat(isToday ? 'Best hour' : 'Best day', best.value > 0 ? esc(best.full) : '—', best.value > 0 ? money(best.value) : '')}
+                  ${stat('Items / order', paid.length ? (items / paid.length).toFixed(1) : '0')}
+                  ${stat('Top product', top.length ? esc(top[0][0]) : '—')}
+                </dl>
+                <h2 class="mt-6 text-sm font-medium text-muted-foreground">Payment methods</h2>
+                <div class="mt-4 flex h-3 overflow-hidden rounded-full bg-muted"><div class="bg-chart-2" style="width:${cardPct}%"></div><div class="bg-primary" style="width:${sales ? 100 - cardPct : 0}%"></div></div>
+                <dl class="mt-4 space-y-3 text-sm">
+                  <div class="flex items-center justify-between"><dt class="flex items-center gap-2"><span class="size-2.5 rounded-full bg-chart-2"></span>Card</dt><dd class="font-medium tabular-nums">${money(card)}</dd></div>
+                  <div class="flex items-center justify-between"><dt class="flex items-center gap-2"><span class="size-2.5 rounded-full bg-primary"></span>Cash</dt><dd class="font-medium tabular-nums">${money(cash)}</dd></div>
+                </dl>
+              </aside>
             </div>`;
       }
     }
