@@ -80,12 +80,20 @@
         .btn-outline { @apply border border-border bg-background hover:bg-accent; }
         .btn-danger { @apply bg-destructive text-destructive-foreground hover:opacity-90; }
         .icon-btn { @apply inline-flex size-8 cursor-pointer items-center justify-center rounded-sm border border-border bg-background transition-colors hover:bg-accent focus-visible:outline-2 disabled:pointer-events-none disabled:opacity-40; }
-        .input { @apply h-10 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-0; }
+        .input { @apply h-10 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-0 disabled:pointer-events-none disabled:opacity-40; }
+        .select { @apply h-10 w-full cursor-pointer appearance-none rounded-md border border-input bg-background px-3 pr-9 text-sm focus-visible:outline-2 focus-visible:outline-offset-0 disabled:pointer-events-none disabled:opacity-40; }
         .chip { @apply h-9 shrink-0 cursor-pointer rounded-full border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-2 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground; }
         .badge { @apply inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium; }
         .dlg { margin: auto; max-height: calc(100dvh - 2rem); @apply overflow-y-auto rounded-xl border border-border bg-card p-0 text-card-foreground shadow-2xl; }
         .dlg[open] { animation: pop 0.15s ease-out; }
+        .rail-heading { @apply text-xs font-semibold tracking-wider text-muted-foreground uppercase; }
       }
+
+      .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      input[type='number'] { appearance: textfield; -moz-appearance: textfield; }
+      input[type='number']::-webkit-outer-spin-button, input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      input[type='search']::-webkit-search-cancel-button, input[type='search']::-webkit-search-decoration { -webkit-appearance: none; }
 
       dialog::backdrop { background: rgb(0 0 0 / 0.45); }
       @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
@@ -323,7 +331,7 @@
         this.className = 'flex h-dvh w-full flex-col-reverse md:flex-row';
         this.innerHTML = `
             <mocho-sidebar></mocho-sidebar>
-            <main class="min-h-0 min-w-0 flex-1 overflow-y-auto">
+            <main class="hide-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto bg-muted dark:bg-background">
               <mocho-register class="lg:h-full"></mocho-register>
               <mocho-orders hidden></mocho-orders>
               <mocho-inventory hidden></mocho-inventory>
@@ -396,7 +404,7 @@
                   </label>
                 </header>
                 <div id="cats" class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Categories"></div>
-                <div id="grid" class="grid min-h-0 flex-1 grid-cols-2 content-start gap-3 sm:grid-cols-3 xl:grid-cols-4 lg:overflow-y-auto lg:pb-2"></div>
+                <div id="grid" class="hide-scrollbar grid min-h-0 flex-1 grid-cols-2 content-start gap-3 sm:grid-cols-3 xl:grid-cols-4 lg:overflow-y-auto lg:pb-2"></div>
                 <button id="bar" class="btn btn-primary sticky bottom-3 h-12 justify-between lg:hidden" hidden></button>
               </section>
               <mocho-cart id="cart" class="min-h-72 border-t border-border bg-card lg:min-h-0 lg:border-t-0 lg:border-l"></mocho-cart>
@@ -459,19 +467,18 @@
       update() {
         const lines = store.lines();
         const t = store.totals();
-        const count = lines.reduce((a, l) => a + l.qty, 0);
         const row = (label, value, cls = '') => `<div class="flex justify-between text-sm ${cls}"><span>${label}</span><span class="tabular-nums">${value}</span></div>`;
         this.innerHTML = `
             <div class="flex h-full flex-col">
-              <header class="flex items-center justify-between gap-2 px-5 pt-5 pb-3">
+              <header class="flex items-start justify-between gap-2 px-5 pt-5 pb-3">
                 <div>
-                  <h2 class="text-lg font-semibold tracking-tight">Current sale</h2>
-                  <p class="text-sm text-muted-foreground">Order #${store.nextOrder}</p>
+                  <h2 class="text-base font-semibold tracking-tight">Current sale</h2>
+                  <p class="mt-0.5 text-xs text-muted-foreground">Order #${store.nextOrder}</p>
                 </div>
                 <button data-clear class="btn btn-outline h-9 px-3" ${lines.length ? '' : 'disabled'}>${icon('trash', 'size-4')}Clear</button>
               </header>
               ${lines.length ? `
-                <ul class="flex-1 divide-y divide-border overflow-y-auto px-5">
+                <ul class="hide-scrollbar flex-1 divide-y divide-border overflow-y-auto px-5">
                   ${lines.map((l) => `
                     <li class="flex gap-3 py-3">
                       <div class="min-w-0 flex-1">
@@ -498,9 +505,12 @@
               <footer class="space-y-3 border-t border-border p-5">
                 <label class="flex items-center justify-between gap-3 text-sm">
                   <span>Discount</span>
-                  <select data-discount class="input w-40" ${lines.length ? '' : 'disabled'}>
-                    ${[0, 5, 10, 15, 20].map((v) => `<option value="${v}" ${store.discount === v ? 'selected' : ''}>${v ? v + '% off' : 'None'}</option>`).join('')}
-                  </select>
+                  <span class="relative">
+                    <select data-discount class="select w-40" ${lines.length ? '' : 'disabled'}>
+                      ${[0, 5, 10, 15, 20].map((v) => `<option value="${v}" ${store.discount === v ? 'selected' : ''}>${v ? v + '% off' : 'None'}</option>`).join('')}
+                    </select>
+                    <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground">${icon('chevron', 'size-4')}</span>
+                  </span>
                 </label>
                 <div class="space-y-1.5">
                   ${row('Subtotal', money(t.subtotal), 'text-muted-foreground')}
@@ -672,7 +682,7 @@
                     ${[['all', 'All'], ['paid', 'Paid'], ['refunded', 'Refunded']].map(([v, l]) => `<button class="chip" data-filter="${v}" aria-pressed="${this.filter === v}">${l}</button>`).join('')}
                   </div>
                 </header>
-                <div class="min-h-0 flex-1 space-y-3 lg:overflow-y-auto lg:pb-2">
+                <div class="hide-scrollbar min-h-0 flex-1 space-y-3 lg:overflow-y-auto lg:pb-2">
                   ${list.length ? list.map((o) => {
           const day = dayLabel(o.at);
           const heading = day !== lastDay ? `<h2 class="pt-3 text-sm font-medium text-muted-foreground">${day}</h2>` : '';
@@ -710,20 +720,29 @@
         }).join('') : '<p class="py-16 text-center text-sm text-muted-foreground">No orders match this filter.</p>'}
                 </div>
               </section>
-              <aside class="min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Summary">
-                <h2 class="text-sm font-medium text-muted-foreground">Summary</h2>
-                <dl class="mt-4 space-y-3">
-                  ${stat('Orders', totalOrders)}
-                  ${stat('Gross sales', money(gross))}
-                  ${stat('Paid', paid.length)}
-                  ${stat('Refunded', refunded.length)}
-                  ${stat('Average order', money(average))}
-                </dl>
-                <h2 class="mt-6 text-sm font-medium text-muted-foreground">Today</h2>
-                <dl class="mt-4 space-y-3">
-                  ${stat('Net sales', money(netToday))}
-                  ${stat('Paid orders', paidToday.length)}
-                </dl>
+              <aside class="hide-scrollbar min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Summary">
+                <header>
+                  <h2 class="text-base font-semibold tracking-tight">Summary</h2>
+                  <p class="mt-0.5 text-xs text-muted-foreground">${totalOrders} ${totalOrders === 1 ? 'order' : 'orders'} on record</p>
+                </header>
+                <div class="mt-5 space-y-5">
+                  <section class="space-y-3">
+                    <h3 class="rail-heading">Sales</h3>
+                    <dl class="space-y-3">
+                      ${stat('Gross sales', money(gross))}
+                      ${stat('Average order', money(average))}
+                      ${stat('Paid', paid.length)}
+                      ${stat('Refunded', refunded.length)}
+                    </dl>
+                  </section>
+                  <section class="space-y-3 border-t border-border pt-5">
+                    <h3 class="rail-heading">Today</h3>
+                    <dl class="space-y-3">
+                      ${stat('Net sales', money(netToday))}
+                      ${stat('Paid orders', paidToday.length)}
+                    </dl>
+                  </section>
+                </div>
               </aside>
             </div>`;
       }
@@ -750,7 +769,7 @@
                   </label>
                   <button id="low" class="chip" aria-pressed="false"></button>
                 </div>
-                <div class="min-h-0 flex-1 overflow-x-auto rounded-xl border border-border bg-card lg:overflow-y-auto">
+                <div class="hide-scrollbar min-h-0 flex-1 overflow-x-auto rounded-xl border border-border bg-card lg:overflow-y-auto">
                   <table class="w-full text-sm">
                     <thead class="text-left text-muted-foreground">
                       <tr><th class="px-4 py-3 font-medium">Product</th><th class="hidden px-4 py-3 font-medium sm:table-cell">Category</th><th class="hidden px-4 py-3 text-right font-medium sm:table-cell">Price</th><th class="px-4 py-3 text-right font-medium">In stock</th></tr>
@@ -759,12 +778,21 @@
                   </table>
                 </div>
               </section>
-              <aside class="min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Stock summary">
-                <h2 class="text-sm font-medium text-muted-foreground">Stock</h2>
-                <p id="sum-scope" class="mt-1 text-xs text-muted-foreground"></p>
-                <dl id="sum-stats" class="mt-4 space-y-3"></dl>
-                <h2 class="mt-6 text-sm font-medium text-muted-foreground">By category</h2>
-                <dl id="sum-cats" class="mt-4 space-y-3"></dl>
+              <aside class="hide-scrollbar min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Overview">
+                <header>
+                  <h2 class="text-base font-semibold tracking-tight">Overview</h2>
+                  <p id="sum-scope" class="mt-0.5 text-xs text-muted-foreground"></p>
+                </header>
+                <div class="mt-5 space-y-5">
+                  <section class="space-y-3">
+                    <h3 class="rail-heading">Stock</h3>
+                    <dl id="sum-stats" class="space-y-3"></dl>
+                  </section>
+                  <section class="space-y-3 border-t border-border pt-5">
+                    <h3 class="rail-heading">By category</h3>
+                    <dl id="sum-cats" class="space-y-3"></dl>
+                  </section>
+                </div>
               </aside>
             </div>`;
         this.$('#q').addEventListener('input', (e) => { this.q = e.target.value.trim().toLowerCase(); this.update(); });
@@ -841,8 +869,13 @@
                   <datalist id="cat-list">${store.categories().map((c) => `<option value="${esc(c)}"></option>`).join('')}</datalist>
                 </label>
                 <div class="grid grid-cols-2 gap-3">
-                  <label class="block space-y-1.5 text-sm font-medium">Price<input name="price" class="input" type="number" min="0" step="0.01" required placeholder="0.00" /></label>
-                  <label class="block space-y-1.5 text-sm font-medium">Starting stock<input name="stock" class="input" type="number" min="0" step="1" value="0" required /></label>
+                  <label class="block space-y-1.5 text-sm font-medium">Price
+                    <span class="relative block">
+                      <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">$</span>
+                      <input name="price" class="input pl-7 tabular-nums" type="number" min="0" step="0.01" required placeholder="0.00" />
+                    </span>
+                  </label>
+                  <label class="block space-y-1.5 text-sm font-medium">Starting stock<input name="stock" class="input tabular-nums" type="number" min="0" step="1" value="0" required /></label>
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                   <button type="button" data-close class="btn btn-outline">Cancel</button>
@@ -911,7 +944,7 @@
                     <button class="chip" data-range="week" aria-pressed="${!isToday}">Last 7 days</button>
                   </div>
                 </header>
-                <div class="min-h-0 flex-1 space-y-6 lg:overflow-y-auto lg:pb-2">
+                <div class="hide-scrollbar min-h-0 flex-1 space-y-6 lg:overflow-y-auto lg:pb-2">
                   <div class="grid grid-cols-2 divide-border rounded-xl border border-border bg-card md:grid-cols-4 md:divide-x [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(-n+2)]:border-border md:[&>*]:border-b-0 [&>*:nth-child(odd)]:border-r [&>*:nth-child(odd)]:border-border md:[&>*:nth-child(odd)]:border-r-0">
                     ${kpi('Net sales', money(sales))}${kpi('Orders', paid.length)}${kpi('Average order', money(avg))}${kpi('Items sold', items)}
                   </div>
@@ -935,19 +968,29 @@
                   </section>
                 </div>
               </section>
-              <aside class="min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Highlights">
-                <h2 class="text-sm font-medium text-muted-foreground">Highlights</h2>
-                <dl class="mt-4 space-y-3">
-                  ${stat(isToday ? 'Best hour' : 'Best day', best.value > 0 ? esc(best.full) : '—', best.value > 0 ? money(best.value) : '')}
-                  ${stat('Items / order', paid.length ? (items / paid.length).toFixed(1) : '0')}
-                  ${stat('Top product', top.length ? esc(top[0][0]) : '—')}
-                </dl>
-                <h2 class="mt-6 text-sm font-medium text-muted-foreground">Payment methods</h2>
-                <div class="mt-4 flex h-3 overflow-hidden rounded-full bg-muted"><div class="bg-chart-2" style="width:${cardPct}%"></div><div class="bg-primary" style="width:${sales ? 100 - cardPct : 0}%"></div></div>
-                <dl class="mt-4 space-y-3 text-sm">
-                  <div class="flex items-center justify-between"><dt class="flex items-center gap-2"><span class="size-2.5 rounded-full bg-chart-2"></span>Card</dt><dd class="font-medium tabular-nums">${money(card)}</dd></div>
-                  <div class="flex items-center justify-between"><dt class="flex items-center gap-2"><span class="size-2.5 rounded-full bg-primary"></span>Cash</dt><dd class="font-medium tabular-nums">${money(cash)}</dd></div>
-                </dl>
+              <aside class="hide-scrollbar min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Summary">
+                <header>
+                  <h2 class="text-base font-semibold tracking-tight">Summary</h2>
+                  <p class="mt-0.5 text-xs text-muted-foreground">${isToday ? 'Today' : 'Last 7 days'}</p>
+                </header>
+                <div class="mt-5 space-y-5">
+                  <section class="space-y-3">
+                    <h3 class="rail-heading">Highlights</h3>
+                    <dl class="space-y-3">
+                      ${stat(isToday ? 'Best hour' : 'Best day', best.value > 0 ? esc(best.full) : '—', best.value > 0 ? money(best.value) : '')}
+                      ${stat('Items / order', paid.length ? (items / paid.length).toFixed(1) : '0')}
+                      ${stat('Top product', top.length ? esc(top[0][0]) : '—')}
+                    </dl>
+                  </section>
+                  <section class="space-y-3 border-t border-border pt-5">
+                    <h3 class="rail-heading">Payment methods</h3>
+                    <div class="flex h-3 overflow-hidden rounded-full bg-muted"><div class="bg-chart-2" style="width:${cardPct}%"></div><div class="bg-primary" style="width:${sales ? 100 - cardPct : 0}%"></div></div>
+                    <dl class="space-y-3 text-sm">
+                      <div class="flex items-center justify-between"><dt class="flex items-center gap-2"><span class="size-2.5 rounded-full bg-chart-2"></span>Card</dt><dd class="font-medium tabular-nums">${money(card)}</dd></div>
+                      <div class="flex items-center justify-between"><dt class="flex items-center gap-2"><span class="size-2.5 rounded-full bg-primary"></span>Cash</dt><dd class="font-medium tabular-nums">${money(cash)}</dd></div>
+                    </dl>
+                  </section>
+                </div>
               </aside>
             </div>`;
       }
