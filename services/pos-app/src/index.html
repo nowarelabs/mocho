@@ -523,6 +523,7 @@
         const lines = store.lines();
         const t = store.totals();
         const row = (label, value, cls = '') => `<div class="flex justify-between text-sm ${cls}"><span>${label}</span><span class="tabular-nums">${value}</span></div>`;
+        const listTop = this.$('ul')?.scrollTop || 0;
         this.innerHTML = `
             <div class="flex h-full flex-col">
               <header class="flex items-start justify-between gap-2 px-5 pt-5 pb-3">
@@ -578,6 +579,8 @@
                 </button>
               </footer>
             </div>`;
+        const ul = this.$('ul');
+        if (ul) ul.scrollTop = listTop;
       }
     }
 
@@ -703,6 +706,26 @@
       open = null;
       confirming = null;
       build() {
+        this.className = 'block h-full';
+        this.innerHTML = `
+            <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
+              <section class="${panelClass('main')}" aria-label="Orders">
+                <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
+                  <header class="flex flex-wrap items-center justify-between gap-3">
+                    <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
+                    <div id="filters" class="flex gap-2" role="group" aria-label="Filter orders"></div>
+                  </header>
+                </div>
+                <div id="list" class="hide-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6"></div>
+              </section>
+              <aside class="${panelClass('side')} bg-card lg:border-l lg:border-border" aria-label="Summary">
+                <header class="border-b border-border p-5">
+                  <h2 class="text-base font-semibold tracking-tight">Summary</h2>
+                  <p id="sum-scope" class="mt-0.5 text-xs text-muted-foreground"></p>
+                </header>
+                <div id="sum" class="hide-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto p-5"></div>
+              </aside>
+            </div>`;
         this.addEventListener('click', (e) => {
           const f = e.target.closest('[data-filter]');
           if (f) { this.filter = f.dataset.filter; return this.update(); }
@@ -716,31 +739,17 @@
         });
       }
       update() {
+        this.togglePanel('section[aria-label="Orders"]', 'main');
+        this.togglePanel('aside[aria-label="Summary"]', 'side');
+        this.$('#filters').innerHTML = [['all', 'All'], ['paid', 'Paid'], ['refunded', 'Refunded']]
+          .map(([v, l]) => `<button class="chip" data-filter="${v}" aria-pressed="${this.filter === v}">${l}</button>`).join('');
+
         const all = [...store.orders].reverse();
         const list = all.filter((o) => this.filter === 'all' || o.status === this.filter).slice(0, 60);
-        const totalOrders = store.orders.length;
-        const gross = round2(store.orders.reduce((a, o) => a + o.total, 0));
-        const paid = store.orders.filter((o) => o.status === 'paid');
-        const refunded = store.orders.filter((o) => o.status === 'refunded');
-        const average = totalOrders ? gross / totalOrders : 0;
-        const today = startOfDay(new Date());
-        const paidToday = paid.filter((o) => o.at >= today);
-        const netToday = round2(paidToday.reduce((a, o) => a + o.total, 0));
         let lastDay = '';
-        this.className = 'block h-full';
-        this.innerHTML = `
-            <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
-              <section class="${panelClass('main')}" aria-label="Orders">
-                <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
-                  <header class="flex flex-wrap items-center justify-between gap-3">
-                    <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
-                    <div class="flex gap-2" role="group" aria-label="Filter orders">
-                      ${[['all', 'All'], ['paid', 'Paid'], ['refunded', 'Refunded']].map(([v, l]) => `<button class="chip" data-filter="${v}" aria-pressed="${this.filter === v}">${l}</button>`).join('')}
-                    </div>
-                  </header>
-                </div>
-                <div class="hide-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6">
-                  ${list.length ? list.map((o) => {
+        const scroller = this.$('#list');
+        const top = scroller.scrollTop;
+        scroller.innerHTML = list.length ? list.map((o) => {
           const day = dayLabel(o.at);
           const heading = day !== lastDay ? `<h2 class="pt-3 text-sm font-medium text-muted-foreground">${day}</h2>` : '';
           lastDay = day;
@@ -774,34 +783,38 @@
                           </div>` : ''}
                       </div>` : ''}
                   </article>`;
-        }).join('') : '<p class="py-16 text-center text-sm text-muted-foreground">No orders match this filter.</p>'}
-                </div>
-              </section>
-              <aside class="${panelClass('side')} bg-card lg:border-l lg:border-border" aria-label="Summary">
-                <header class="border-b border-border p-5">
-                  <h2 class="text-base font-semibold tracking-tight">Summary</h2>
-                  <p class="mt-0.5 text-xs text-muted-foreground">${totalOrders} ${totalOrders === 1 ? 'order' : 'orders'} on record</p>
-                </header>
-                <div class="hide-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
-                  <section class="space-y-3">
-                    <h3 class="rail-heading">Sales</h3>
-                    <dl class="space-y-3">
-                      ${stat('Gross sales', money(gross))}
-                      ${stat('Average order', money(average))}
-                      ${stat('Paid', paid.length)}
-                      ${stat('Refunded', refunded.length)}
-                    </dl>
-                  </section>
-                  <section class="space-y-3 border-t border-border pt-5">
-                    <h3 class="rail-heading">Today</h3>
-                    <dl class="space-y-3">
-                      ${stat('Net sales', money(netToday))}
-                      ${stat('Paid orders', paidToday.length)}
-                    </dl>
-                  </section>
-                </div>
-              </aside>
-            </div>`;
+        }).join('') : '<p class="py-16 text-center text-sm text-muted-foreground">No orders match this filter.</p>';
+        scroller.scrollTop = top;
+
+        const totalOrders = store.orders.length;
+        const gross = round2(store.orders.reduce((a, o) => a + o.total, 0));
+        const paid = store.orders.filter((o) => o.status === 'paid');
+        const refunded = store.orders.filter((o) => o.status === 'refunded');
+        const average = totalOrders ? gross / totalOrders : 0;
+        const today = startOfDay(new Date());
+        const paidToday = paid.filter((o) => o.at >= today);
+        const netToday = round2(paidToday.reduce((a, o) => a + o.total, 0));
+        const sum = this.$('#sum');
+        const sumTop = sum.scrollTop;
+        this.$('#sum-scope').textContent = `${totalOrders} ${totalOrders === 1 ? 'order' : 'orders'} on record`;
+        sum.innerHTML = `
+            <section class="space-y-3">
+              <h3 class="rail-heading">Sales</h3>
+              <dl class="space-y-3">
+                ${stat('Gross sales', money(gross))}
+                ${stat('Average order', money(average))}
+                ${stat('Paid', paid.length)}
+                ${stat('Refunded', refunded.length)}
+              </dl>
+            </section>
+            <section class="space-y-3 border-t border-border pt-5">
+              <h3 class="rail-heading">Today</h3>
+              <dl class="space-y-3">
+                ${stat('Net sales', money(netToday))}
+                ${stat('Paid orders', paidToday.length)}
+              </dl>
+            </section>`;
+        sum.scrollTop = sumTop;
       }
     }
 
