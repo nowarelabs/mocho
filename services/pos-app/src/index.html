@@ -148,6 +148,7 @@
       minus: '<path d="M5 12h14"/>',
       trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
       search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+      filter: '<path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/>',
       sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
       moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
       check: '<path d="M20 6 9 17l-5-5"/>',
@@ -709,6 +710,7 @@
     /* ---------- <mocho-orders> ---------- */
     class MochoOrders extends MochoElement {
       filter = 'all';
+      q = '';
       open = null;
       confirming = null;
       resetScroll = false;
@@ -716,6 +718,7 @@
       dateTo = '';
       hourFrom = '';
       hourTo = '';
+      advOpen = false;
       build() {
         this.className = 'block h-full';
         const hourOpts = ['<option value="">Any</option>', ...Array.from({ length: 24 }, (_, h) => `<option value="${h}">${hourLabel(h)}</option>`)].join('');
@@ -728,28 +731,43 @@
                 <div class="flex flex-col gap-3 p-4 md:p-6 lg:pb-4">
                   <header class="flex flex-wrap items-center justify-between gap-3">
                     <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
-                    <div id="filters" class="flex gap-2" role="group" aria-label="Filter orders"></div>
+                    <div id="filters" class="flex gap-2" role="group" aria-label="Filter orders by status"></div>
                   </header>
-                  <div class="flex flex-wrap items-end gap-x-3 gap-y-2" role="group" aria-label="Filter by date and time">
-                    <label class="${fieldLabel}">From date
-                      <input id="date-from" name="date-from" type="date" class="${dateCls}" />
+                  <div class="flex flex-wrap items-center gap-3">
+                    <label class="relative w-full sm:w-72">
+                      <span class="sr-only">Search orders</span>
+                      <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
+                      <input id="ord-q" name="order-search" type="search" class="input pl-9" placeholder="Search #, item or method" autocomplete="off" />
                     </label>
-                    <label class="${fieldLabel}">To date
-                      <input id="date-to" name="date-to" type="date" class="${dateCls}" />
-                    </label>
-                    <label class="${fieldLabel}">From hour
-                      <span class="relative">
-                        <select id="hour-from" name="hour-from" class="${hourCls}">${hourOpts}</select>
-                        <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground">${icon('chevron', 'size-4')}</span>
-                      </span>
-                    </label>
-                    <label class="${fieldLabel}">To hour
-                      <span class="relative">
-                        <select id="hour-to" name="hour-to" class="${hourCls}">${hourOpts}</select>
-                        <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground">${icon('chevron', 'size-4')}</span>
-                      </span>
-                    </label>
-                    <button id="clear-range" class="btn btn-outline h-9 hidden">Clear</button>
+                    <button id="adv-toggle" class="chip inline-flex items-center gap-1.5" aria-expanded="false" aria-controls="adv-filters" aria-pressed="false">
+                      ${icon('filter', 'size-4')}Filters<span id="adv-count"></span>
+                      <span id="adv-chevron" class="transition-transform">${icon('chevron', 'size-4')}</span>
+                    </button>
+                  </div>
+                  <div id="adv-filters" class="hidden flex-col gap-3 rounded-xl border border-border bg-card p-4" role="group" aria-label="Advanced filters">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <label class="${fieldLabel}">From date
+                        <input id="date-from" name="date-from" type="date" class="${dateCls}" />
+                      </label>
+                      <label class="${fieldLabel}">To date
+                        <input id="date-to" name="date-to" type="date" class="${dateCls}" />
+                      </label>
+                      <label class="${fieldLabel}">From hour
+                        <span class="relative">
+                          <select id="hour-from" name="hour-from" class="${hourCls}">${hourOpts}</select>
+                          <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground">${icon('chevron', 'size-4')}</span>
+                        </span>
+                      </label>
+                      <label class="${fieldLabel}">To hour
+                        <span class="relative">
+                          <select id="hour-to" name="hour-to" class="${hourCls}">${hourOpts}</select>
+                          <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground">${icon('chevron', 'size-4')}</span>
+                        </span>
+                      </label>
+                    </div>
+                    <div class="flex justify-end">
+                      <button id="clear-range" class="btn btn-outline h-9 hidden">Clear filters</button>
+                    </div>
                   </div>
                 </div>
                 <div id="list" class="hide-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6"></div>
@@ -764,6 +782,7 @@
             </div>`;
         this.addEventListener('click', (e) => {
           if (e.target.closest('#clear-range')) return this.clearRange();
+          if (e.target.closest('#adv-toggle')) return this.toggleAdv();
           const f = e.target.closest('[data-filter]');
           if (f) { this.filter = f.dataset.filter; this.resetScroll = true; return this.update(); }
           const row = e.target.closest('[data-row]');
@@ -775,7 +794,18 @@
           if (ok) { this.confirming = null; store.refund(Number(ok.dataset.confirm)); }
         });
         this.addEventListener('change', (e) => { if (e.target.matches('#date-from, #date-to, #hour-from, #hour-to')) this.readRange(); });
-        this.addEventListener('input', (e) => { if (e.target.matches('input[type="date"]')) this.readRange(); });
+        this.addEventListener('input', (e) => {
+          if (e.target.matches('input[type="date"]')) return this.readRange();
+          if (e.target.matches('#ord-q')) { this.q = e.target.value.trim().toLowerCase(); this.resetScroll = true; this.update(); }
+        });
+      }
+      toggleAdv() {
+        this.advOpen = !this.advOpen;
+        const panel = this.$('#adv-filters');
+        panel.classList.toggle('hidden', !this.advOpen);
+        panel.classList.toggle('flex', this.advOpen);
+        this.$('#adv-toggle').setAttribute('aria-expanded', String(this.advOpen));
+        this.$('#adv-chevron').classList.toggle('rotate-180', this.advOpen);
       }
       readRange() {
         this.dateFrom = this.$('#date-from')?.value ?? '';
@@ -798,6 +828,9 @@
           .map(([v, l]) => `<button class="chip" data-filter="${v}" aria-pressed="${this.filter === v}">${l}</button>`).join('');
         const rangeActive = !!(this.dateFrom || this.dateTo || this.hourFrom || this.hourTo);
         this.$('#clear-range').classList.toggle('hidden', !rangeActive);
+        const advCount = (this.dateFrom ? 1 : 0) + (this.dateTo ? 1 : 0) + (this.hourFrom !== '' ? 1 : 0) + (this.hourTo !== '' ? 1 : 0);
+        this.$('#adv-count').textContent = advCount ? ` (${advCount})` : '';
+        this.$('#adv-toggle').setAttribute('aria-pressed', String(advCount > 0));
 
         let fromTs = this.dateFrom ? parseDay(this.dateFrom) : null;
         let toTs = this.dateTo ? parseDay(this.dateTo) : null;
@@ -809,6 +842,7 @@
         const all = [...store.orders].reverse();
         const filtered = all.filter((o) => {
           if (this.filter !== 'all' && o.status !== this.filter) return false;
+          if (this.q && !`#${o.id} ${o.method} ${o.items.map((i) => i.name).join(' ')}`.toLowerCase().includes(this.q)) return false;
           const d = startOfDay(new Date(o.at));
           if (fromTs != null && d < fromTs) return false;
           if (toTs != null && d > toTs) return false;
@@ -856,7 +890,13 @@
                           </div>` : ''}
                       </div>` : ''}
                   </article>`;
-        }).join('') : '<p class="py-16 text-center text-sm text-muted-foreground">No orders match this filter.</p>';
+        }).join('') : `<div class="grid place-items-center py-16 text-center">
+                  <div>
+                    <div class="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">${icon('receipt')}</div>
+                    <p class="font-medium">No orders found</p>
+                    <p class="mt-1 text-sm text-muted-foreground">${this.q ? `Nothing matches “${esc(this.q)}”. Try a different search.` : 'No orders match this filter.'}</p>
+                  </div>
+                </div>`;
         scroller.scrollTop = top;
 
         const totalOrders = store.orders.length;
@@ -869,7 +909,7 @@
         const netToday = round2(paidToday.reduce((a, o) => a + o.total, 0));
         const sum = this.$('#sum');
         const sumTop = sum.scrollTop;
-        this.$('#sum-scope').textContent = rangeActive
+        this.$('#sum-scope').textContent = (this.filter !== 'all' || this.q || rangeActive)
           ? `${filtered.length} of ${totalOrders} orders`
           : `${totalOrders} ${totalOrders === 1 ? 'order' : 'orders'} on record`;
         sum.innerHTML = `
