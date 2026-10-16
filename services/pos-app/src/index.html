@@ -70,8 +70,8 @@
         * { @apply border-border outline-ring/50; }
         html, body { height: 100%; width: 100%; margin: 0; padding: 0; overscroll-behavior-x: none; }
         body { @apply bg-background text-foreground; font-family: 'Inter', system-ui, sans-serif; }
-        mocho-app, mocho-sidebar, mocho-register, mocho-cart, mocho-orders, mocho-inventory,
-        mocho-reports, mocho-checkout, mocho-product-form, mocho-toaster { display: block; }
+        mocho-app, mocho-appbar, mocho-paneltabs, mocho-sidebar, mocho-register, mocho-cart, mocho-orders,
+        mocho-inventory, mocho-reports, mocho-checkout, mocho-product-form, mocho-toaster { display: block; }
       }
 
       @layer components {
@@ -229,6 +229,7 @@
       constructor() {
         super();
         this.view = 'register';
+        this.panel = 'main';
         this.products = seedProducts();
         this.orders = seedOrders(this.products);
         this.nextOrder = this.orders.length ? this.orders[this.orders.length - 1].id + 1 : 1001;
@@ -241,7 +242,8 @@
       qtyInCart(id) { return this.cart.get(id) || 0; }
       categories() { return [...new Set(this.products.map((p) => p.category))]; }
 
-      setView(v) { this.view = v; this.emit(); }
+      setView(v) { this.view = v; this.panel = 'main'; this.emit(); }
+      setPanel(p) { this.panel = p; this.emit(); }
 
       add(id) {
         const p = this.product(id);
@@ -316,6 +318,12 @@
       }
       disconnectedCallback() { if (this._h) store.removeEventListener('change', this._h); }
       $(sel) { return this.querySelector(sel); }
+      togglePanel(sel, id) {
+        const el = this.$(sel);
+        if (!el) return;
+        el.classList.toggle('hidden', store.panel !== id);
+        el.classList.toggle('flex', store.panel === id);
+      }
     }
 
     /* ---------- <mocho-app>: layout shell and view switching ---------- */
@@ -326,17 +334,29 @@
       { id: 'reports', label: 'Reports', icon: 'chart' },
     ];
 
+    const PANELS = {
+      register: [{ id: 'main', label: 'Products' }, { id: 'side', label: 'Sale' }],
+      orders: [{ id: 'main', label: 'Orders' }, { id: 'side', label: 'Summary' }],
+      inventory: [{ id: 'main', label: 'Products' }, { id: 'side', label: 'Overview' }],
+      reports: [{ id: 'main', label: 'Report' }, { id: 'side', label: 'Summary' }],
+    };
+    const panelClass = (id) => `${store.panel === id ? 'flex' : 'hidden lg:flex'} min-h-0 flex-col`;
+
     class MochoApp extends MochoElement {
       build() {
-        this.className = 'flex h-dvh w-full flex-col-reverse md:flex-row';
+        this.className = 'flex h-dvh w-full flex-col';
         this.innerHTML = `
-            <mocho-sidebar></mocho-sidebar>
-            <main class="hide-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto bg-muted dark:bg-background">
-              <mocho-register class="lg:h-full"></mocho-register>
-              <mocho-orders hidden></mocho-orders>
-              <mocho-inventory hidden></mocho-inventory>
-              <mocho-reports hidden></mocho-reports>
-            </main>`;
+            <mocho-appbar></mocho-appbar>
+            <div class="flex min-h-0 flex-1 flex-col-reverse md:flex-row">
+              <mocho-sidebar></mocho-sidebar>
+              <mocho-paneltabs></mocho-paneltabs>
+              <main class="hide-scrollbar min-h-0 min-w-0 flex-1 overflow-hidden bg-muted dark:bg-background">
+                <mocho-register hidden></mocho-register>
+                <mocho-orders hidden></mocho-orders>
+                <mocho-inventory hidden></mocho-inventory>
+                <mocho-reports hidden></mocho-reports>
+              </main>
+            </div>`;
         const fromHash = () => {
           const v = location.hash.slice(1);
           if (VIEWS.some((x) => x.id === v)) store.setView(v);
@@ -346,6 +366,41 @@
       }
       update() {
         VIEWS.forEach((v) => { this.$(`mocho-${v.id}`).hidden = store.view !== v.id; });
+      }
+    }
+
+    /* ---------- <mocho-appbar>: mobile brand header ---------- */
+    class MochoAppbar extends MochoElement {
+      live = false;
+      build() {
+        this.className = 'flex shrink-0 items-center gap-2.5 border-b border-sidebar-border bg-sidebar px-4 py-3 md:hidden';
+        this.innerHTML = `
+            <span class="grid size-8 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">M</span>
+            <span class="text-lg font-semibold tracking-tight">Mocho</span>`;
+      }
+    }
+
+    /* ---------- <mocho-paneltabs>: mobile switch between the center and right panels ---------- */
+    class MochoPanelTabs extends MochoElement {
+      build() {
+        this.className = 'shrink-0 border-t border-sidebar-border bg-sidebar md:hidden';
+        this.addEventListener('click', (e) => {
+          const t = e.target.closest('[data-panel]');
+          if (t) store.setPanel(t.dataset.panel);
+        });
+      }
+      update() {
+        const tabs = PANELS[store.view] ?? PANELS.register;
+        const n = store.lines().reduce((a, l) => a + l.qty, 0);
+        const item = 'flex flex-1 cursor-pointer items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors aria-pressed:bg-accent aria-pressed:text-foreground';
+        this.innerHTML = `
+            <div class="flex gap-1 p-2" role="tablist" aria-label="Panels">
+              ${tabs.map((t) => {
+          const badge = t.id === 'side' && store.view === 'register' && n
+            ? ` <span class="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground tabular-nums">${n}</span>` : '';
+          return `<button data-panel="${t.id}" role="tab" class="${item}" aria-pressed="${store.panel === t.id}">${t.label}${badge}</button>`;
+        }).join('')}
+            </div>`;
       }
     }
 
@@ -392,22 +447,26 @@
       q = '';
       cat = 'All';
       build() {
+        this.className = 'block h-full';
         this.innerHTML = `
-            <div class="grid grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_24rem] lg:overflow-hidden">
-              <section class="flex min-h-0 flex-col gap-4 p-4 md:p-6" aria-label="Products">
-                <header class="flex flex-wrap items-center justify-between gap-3">
-                  <h1 class="text-2xl font-semibold tracking-tight">Register</h1>
-                  <label class="relative w-full sm:w-72">
-                    <span class="sr-only">Search products</span>
-                    <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
-                    <input id="q" type="search" class="input pl-9" placeholder="Search products" autocomplete="off" />
-                  </label>
-                </header>
-                <div id="cats" class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Categories"></div>
-                <div id="grid" class="hide-scrollbar grid min-h-0 flex-1 grid-cols-2 content-start gap-3 sm:grid-cols-3 xl:grid-cols-4 lg:overflow-y-auto lg:pb-2"></div>
-                <button id="bar" class="btn btn-primary sticky bottom-3 h-12 justify-between lg:hidden" hidden></button>
+            <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
+              <section class="min-h-0 flex-col lg:flex" aria-label="Products">
+                <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
+                  <header class="flex flex-wrap items-center justify-between gap-3">
+                    <h1 class="text-2xl font-semibold tracking-tight">Register</h1>
+                    <label class="relative w-full sm:w-72">
+                      <span class="sr-only">Search products</span>
+                      <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
+                      <input id="q" type="search" class="input pl-9" placeholder="Search products" autocomplete="off" />
+                    </label>
+                  </header>
+                  <div id="cats" class="hide-scrollbar flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Categories"></div>
+                </div>
+                <div class="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6">
+                  <div id="grid" class="grid grid-cols-2 content-start gap-3 sm:grid-cols-3 xl:grid-cols-4"></div>
+                </div>
               </section>
-              <mocho-cart id="cart" class="min-h-72 border-t border-border bg-card lg:min-h-0 lg:border-t-0 lg:border-l"></mocho-cart>
+              <mocho-cart id="cart" class="min-h-0 flex-col bg-card lg:flex lg:border-l lg:border-border"></mocho-cart>
             </div>`;
         this.$('#q').addEventListener('input', (e) => { this.q = e.target.value.trim().toLowerCase(); this.renderGrid(); });
         this.addEventListener('click', (e) => {
@@ -415,18 +474,14 @@
           if (add) store.add(add.dataset.add);
           const cat = e.target.closest('[data-cat]');
           if (cat) { this.cat = cat.dataset.cat; this.update(); }
-          if (e.target.closest('#bar')) this.$('#cart').scrollIntoView({ behavior: 'smooth' });
         });
       }
       update() {
+        this.togglePanel('section[aria-label="Products"]', 'main');
+        this.togglePanel('#cart', 'side');
         this.$('#cats').innerHTML = ['All', ...store.categories()]
           .map((c) => `<button class="chip" data-cat="${esc(c)}" aria-pressed="${this.cat === c}">${esc(c)}</button>`).join('');
         this.renderGrid();
-        const lines = store.lines();
-        const bar = this.$('#bar');
-        bar.hidden = !lines.length;
-        const n = lines.reduce((a, l) => a + l.qty, 0);
-        bar.innerHTML = `<span>View sale, ${n} ${n === 1 ? 'item' : 'items'}</span><span class="tabular-nums">${money(store.totals().total)}</span>`;
       }
       renderGrid() {
         const list = store.products.filter((p) =>
@@ -672,17 +727,19 @@
         const paidToday = paid.filter((o) => o.at >= today);
         const netToday = round2(paidToday.reduce((a, o) => a + o.total, 0));
         let lastDay = '';
-        this.className = 'block lg:h-full';
+        this.className = 'block h-full';
         this.innerHTML = `
-            <div class="grid grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_24rem] lg:overflow-hidden">
-              <section class="flex min-h-0 flex-col gap-4 p-4 md:p-6" aria-label="Orders">
-                <header class="flex flex-wrap items-center justify-between gap-3">
-                  <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
-                  <div class="flex gap-2" role="group" aria-label="Filter orders">
-                    ${[['all', 'All'], ['paid', 'Paid'], ['refunded', 'Refunded']].map(([v, l]) => `<button class="chip" data-filter="${v}" aria-pressed="${this.filter === v}">${l}</button>`).join('')}
-                  </div>
-                </header>
-                <div class="hide-scrollbar min-h-0 flex-1 space-y-3 lg:overflow-y-auto lg:pb-2">
+            <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
+              <section class="${panelClass('main')}" aria-label="Orders">
+                <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
+                  <header class="flex flex-wrap items-center justify-between gap-3">
+                    <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
+                    <div class="flex gap-2" role="group" aria-label="Filter orders">
+                      ${[['all', 'All'], ['paid', 'Paid'], ['refunded', 'Refunded']].map(([v, l]) => `<button class="chip" data-filter="${v}" aria-pressed="${this.filter === v}">${l}</button>`).join('')}
+                    </div>
+                  </header>
+                </div>
+                <div class="hide-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6">
                   ${list.length ? list.map((o) => {
           const day = dayLabel(o.at);
           const heading = day !== lastDay ? `<h2 class="pt-3 text-sm font-medium text-muted-foreground">${day}</h2>` : '';
@@ -720,12 +777,12 @@
         }).join('') : '<p class="py-16 text-center text-sm text-muted-foreground">No orders match this filter.</p>'}
                 </div>
               </section>
-              <aside class="hide-scrollbar min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Summary">
-                <header>
+              <aside class="${panelClass('side')} bg-card lg:border-l lg:border-border" aria-label="Summary">
+                <header class="border-b border-border p-5">
                   <h2 class="text-base font-semibold tracking-tight">Summary</h2>
                   <p class="mt-0.5 text-xs text-muted-foreground">${totalOrders} ${totalOrders === 1 ? 'order' : 'orders'} on record</p>
                 </header>
-                <div class="mt-5 space-y-5">
+                <div class="hide-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
                   <section class="space-y-3">
                     <h3 class="rail-heading">Sales</h3>
                     <dl class="space-y-3">
@@ -753,37 +810,41 @@
       q = '';
       lowOnly = false;
       build() {
-        this.className = 'block lg:h-full';
+        this.className = 'block h-full';
         this.innerHTML = `
-            <div class="grid grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_24rem] lg:overflow-hidden">
-              <section class="flex min-h-0 flex-col gap-4 p-4 md:p-6" aria-label="Inventory">
-                <header class="flex flex-wrap items-center justify-between gap-3">
-                  <h1 class="text-2xl font-semibold tracking-tight">Inventory</h1>
-                  <button id="add" class="btn btn-primary">${icon('plus', 'size-4')}Add product</button>
-                </header>
-                <div class="flex flex-wrap items-center gap-3">
-                  <label class="relative w-full sm:w-72">
-                    <span class="sr-only">Search inventory</span>
-                    <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
-                    <input id="q" type="search" class="input pl-9" placeholder="Search inventory" autocomplete="off" />
-                  </label>
-                  <button id="low" class="chip" aria-pressed="false"></button>
+            <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
+              <section class="min-h-0 flex-col lg:flex" aria-label="Inventory">
+                <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
+                  <header class="flex flex-wrap items-center justify-between gap-3">
+                    <h1 class="text-2xl font-semibold tracking-tight">Inventory</h1>
+                    <button id="add" class="btn btn-primary">${icon('plus', 'size-4')}Add product</button>
+                  </header>
+                  <div class="flex flex-wrap items-center gap-3">
+                    <label class="relative w-full sm:w-72">
+                      <span class="sr-only">Search inventory</span>
+                      <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
+                      <input id="q" type="search" class="input pl-9" placeholder="Search inventory" autocomplete="off" />
+                    </label>
+                    <button id="low" class="chip" aria-pressed="false"></button>
+                  </div>
                 </div>
-                <div class="hide-scrollbar min-h-0 flex-1 overflow-x-auto rounded-xl border border-border bg-card lg:overflow-y-auto">
-                  <table class="w-full text-sm">
-                    <thead class="text-left text-muted-foreground">
-                      <tr><th class="px-4 py-3 font-medium">Product</th><th class="hidden px-4 py-3 font-medium sm:table-cell">Category</th><th class="hidden px-4 py-3 text-right font-medium sm:table-cell">Price</th><th class="px-4 py-3 text-right font-medium">In stock</th></tr>
-                    </thead>
-                    <tbody id="rows"></tbody>
-                  </table>
+                <div class="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6">
+                  <div class="overflow-x-auto rounded-xl border border-border bg-card">
+                    <table class="w-full text-sm">
+                      <thead class="text-left text-muted-foreground">
+                        <tr><th class="px-4 py-3 font-medium">Product</th><th class="hidden px-4 py-3 font-medium sm:table-cell">Category</th><th class="hidden px-4 py-3 text-right font-medium sm:table-cell">Price</th><th class="px-4 py-3 text-right font-medium">In stock</th></tr>
+                      </thead>
+                      <tbody id="rows"></tbody>
+                    </table>
+                  </div>
                 </div>
               </section>
-              <aside class="hide-scrollbar min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Overview">
-                <header>
+              <aside class="min-h-0 flex-col bg-card lg:flex lg:border-l lg:border-border" aria-label="Overview">
+                <header class="border-b border-border p-5">
                   <h2 class="text-base font-semibold tracking-tight">Overview</h2>
                   <p id="sum-scope" class="mt-0.5 text-xs text-muted-foreground"></p>
                 </header>
-                <div class="mt-5 space-y-5">
+                <div class="hide-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
                   <section class="space-y-3">
                     <h3 class="rail-heading">Stock</h3>
                     <dl id="sum-stats" class="space-y-3"></dl>
@@ -805,6 +866,8 @@
         this.addEventListener('change', (e) => { if (e.target.matches('[data-stock]')) store.setStock(e.target.dataset.stock, e.target.value); });
       }
       update() {
+        this.togglePanel('section[aria-label="Inventory"]', 'main');
+        this.togglePanel('aside[aria-label="Overview"]', 'side');
         const lowCount = store.products.filter((p) => p.stock <= LOW_STOCK).length;
         const low = this.$('#low');
         low.setAttribute('aria-pressed', this.lowOnly);
@@ -899,7 +962,7 @@
     class MochoReports extends MochoElement {
       range = 'today';
       build() {
-        this.className = 'block lg:h-full';
+        this.className = 'block h-full';
         this.addEventListener('click', (e) => {
           const r = e.target.closest('[data-range]');
           if (r) { this.range = r.dataset.range; this.update(); }
@@ -935,16 +998,18 @@
         const kpi = (label, value) => `<div class="p-5"><p class="text-sm text-muted-foreground">${label}</p><p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">${value}</p></div>`;
         const best = buckets.reduce((a, b) => (b.value > a.value ? b : a), buckets[0]);
         this.innerHTML = `
-            <div class="grid grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_24rem] lg:overflow-hidden">
-              <section class="flex min-h-0 flex-col gap-4 p-4 md:p-6" aria-label="Reports">
-                <header class="flex flex-wrap items-center justify-between gap-3">
-                  <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
-                  <div class="flex gap-2" role="group" aria-label="Date range">
-                    <button class="chip" data-range="today" aria-pressed="${isToday}">Today</button>
-                    <button class="chip" data-range="week" aria-pressed="${!isToday}">Last 7 days</button>
-                  </div>
-                </header>
-                <div class="hide-scrollbar min-h-0 flex-1 space-y-6 lg:overflow-y-auto lg:pb-2">
+            <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
+              <section class="${panelClass('main')}" aria-label="Reports">
+                <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
+                  <header class="flex flex-wrap items-center justify-between gap-3">
+                    <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
+                    <div class="flex gap-2" role="group" aria-label="Date range">
+                      <button class="chip" data-range="today" aria-pressed="${isToday}">Today</button>
+                      <button class="chip" data-range="week" aria-pressed="${!isToday}">Last 7 days</button>
+                    </div>
+                  </header>
+                </div>
+                <div class="hide-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6">
                   <div class="grid grid-cols-2 divide-border rounded-xl border border-border bg-card md:grid-cols-4 md:divide-x [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(-n+2)]:border-border md:[&>*]:border-b-0 [&>*:nth-child(odd)]:border-r [&>*:nth-child(odd)]:border-border md:[&>*:nth-child(odd)]:border-r-0">
                     ${kpi('Net sales', money(sales))}${kpi('Orders', paid.length)}${kpi('Average order', money(avg))}${kpi('Items sold', items)}
                   </div>
@@ -968,12 +1033,12 @@
                   </section>
                 </div>
               </section>
-              <aside class="hide-scrollbar min-h-0 border-t border-border bg-card p-5 lg:overflow-y-auto lg:border-t-0 lg:border-l" aria-label="Summary">
-                <header>
+              <aside class="${panelClass('side')} bg-card lg:border-l lg:border-border" aria-label="Summary">
+                <header class="border-b border-border p-5">
                   <h2 class="text-base font-semibold tracking-tight">Summary</h2>
                   <p class="mt-0.5 text-xs text-muted-foreground">${isToday ? 'Today' : 'Last 7 days'}</p>
                 </header>
-                <div class="mt-5 space-y-5">
+                <div class="hide-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
                   <section class="space-y-3">
                     <h3 class="rail-heading">Highlights</h3>
                     <dl class="space-y-3">
@@ -1000,7 +1065,7 @@
     class MochoToaster extends MochoElement {
       live = false;
       build() {
-        this.className = 'pointer-events-none fixed right-4 bottom-20 z-50 flex flex-col items-end gap-2 md:right-6 md:bottom-6';
+        this.className = 'pointer-events-none fixed right-4 bottom-32 z-50 flex flex-col items-end gap-2 md:right-6 md:bottom-6';
         this.setAttribute('aria-live', 'polite');
         store.addEventListener('toast', (e) => {
           const t = document.createElement('div');
@@ -1014,7 +1079,8 @@
     }
 
     for (const [tag, cls] of Object.entries({
-      'mocho-app': MochoApp, 'mocho-sidebar': MochoSidebar, 'mocho-register': MochoRegister, 'mocho-cart': MochoCart,
+      'mocho-app': MochoApp, 'mocho-appbar': MochoAppbar, 'mocho-paneltabs': MochoPanelTabs,
+      'mocho-sidebar': MochoSidebar, 'mocho-register': MochoRegister, 'mocho-cart': MochoCart,
       'mocho-checkout': MochoCheckout, 'mocho-orders': MochoOrders, 'mocho-inventory': MochoInventory,
       'mocho-product-form': MochoProductForm, 'mocho-reports': MochoReports, 'mocho-toaster': MochoToaster,
     })) customElements.define(tag, cls);
