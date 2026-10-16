@@ -457,7 +457,7 @@
                     <label class="relative w-full sm:w-72">
                       <span class="sr-only">Search products</span>
                       <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
-                      <input id="q" type="search" class="input pl-9" placeholder="Search products" autocomplete="off" />
+                      <input id="q" name="product-search" type="search" class="input pl-9" placeholder="Search products" autocomplete="off" />
                     </label>
                   </header>
                   <div id="cats" class="hide-scrollbar flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Categories"></div>
@@ -562,7 +562,7 @@
                 <label class="flex items-center justify-between gap-3 text-sm">
                   <span>Discount</span>
                   <span class="relative">
-                    <select data-discount class="select w-40" ${lines.length ? '' : 'disabled'}>
+                    <select data-discount id="cart-discount" name="discount" class="select w-40" ${lines.length ? '' : 'disabled'}>
                       ${[0, 5, 10, 15, 20].map((v) => `<option value="${v}" ${store.discount === v ? 'selected' : ''}>${v ? v + '% off' : 'None'}</option>`).join('')}
                     </select>
                     <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground">${icon('chevron', 'size-4')}</span>
@@ -680,7 +680,7 @@
               ${s.method === 'cash' ? `
                 <div class="space-y-3">
                   <label class="block space-y-1.5 text-sm font-medium">Cash received
-                    <input id="tender" class="input h-12 text-lg tabular-nums" inputmode="decimal" placeholder="0.00" value="${esc(s.tendered)}" autocomplete="off" autofocus />
+                    <input id="tender" name="cash-received" class="input h-12 text-lg tabular-nums" inputmode="decimal" placeholder="0.00" value="${esc(s.tendered)}" autocomplete="off" autofocus />
                   </label>
                   <div class="flex gap-2">
                     <button data-tender="${this.due}" class="btn btn-outline h-9 flex-1 px-2">Exact</button>
@@ -838,7 +838,7 @@
                     <label class="relative w-full sm:w-72">
                       <span class="sr-only">Search inventory</span>
                       <span class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">${icon('search', 'size-4')}</span>
-                      <input id="q" type="search" class="input pl-9" placeholder="Search inventory" autocomplete="off" />
+                      <input id="inv-q" name="inventory-search" type="search" class="input pl-9" placeholder="Search inventory" autocomplete="off" />
                     </label>
                     <button id="low" class="chip" aria-pressed="false"></button>
                   </div>
@@ -857,7 +857,7 @@
               <aside class="min-h-0 flex-col bg-card lg:flex lg:border-l lg:border-border" aria-label="Overview">
                 <header class="border-b border-border p-5">
                   <h2 class="text-base font-semibold tracking-tight">Overview</h2>
-                  <p id="sum-scope" class="mt-0.5 text-xs text-muted-foreground"></p>
+                  <p id="inv-scope" class="mt-0.5 text-xs text-muted-foreground"></p>
                 </header>
                 <div class="hide-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
                   <section class="space-y-3">
@@ -871,7 +871,7 @@
                 </div>
               </aside>
             </div>`;
-        this.$('#q').addEventListener('input', (e) => { this.q = e.target.value.trim().toLowerCase(); this.update(); });
+        this.$('#inv-q').addEventListener('input', (e) => { this.q = e.target.value.trim().toLowerCase(); this.update(); });
         this.$('#add').addEventListener('click', () => store.dispatchEvent(new Event('new-product')));
         this.$('#low').addEventListener('click', () => { this.lowOnly = !this.lowOnly; this.update(); });
         this.addEventListener('click', (e) => {
@@ -899,7 +899,7 @@
                     <td class="px-4 py-3">
                       <div class="flex items-center justify-end gap-1.5">
                         <button class="icon-btn" data-adjust="-1" data-id="${p.id}" aria-label="Decrease ${esc(p.name)} stock" ${p.stock <= 0 ? 'disabled' : ''}>${icon('minus', 'size-4')}</button>
-                        <input data-stock="${p.id}" type="number" min="0" value="${p.stock}" aria-label="${esc(p.name)} stock" class="input h-8 w-16 px-2 text-center tabular-nums" />
+                        <input data-stock="${p.id}" id="stock-${p.id}" name="stock-${p.id}" type="number" min="0" value="${p.stock}" aria-label="${esc(p.name)} stock" class="input h-8 w-16 px-2 text-center tabular-nums" />
                         <button class="icon-btn" data-adjust="1" data-id="${p.id}" aria-label="Increase ${esc(p.name)} stock">${icon('plus', 'size-4')}</button>
                       </div>
                     </td>
@@ -910,7 +910,7 @@
         const retail = round2(list.reduce((a, p) => a + p.stock * p.price, 0));
         const lowN = list.filter((p) => p.stock > 0 && p.stock <= LOW_STOCK).length;
         const outN = list.filter((p) => p.stock <= 0).length;
-        this.$('#sum-scope').textContent = this.lowOnly ? 'Low or out of stock' : this.q ? 'Search results' : 'All products';
+        this.$('#inv-scope').textContent = this.lowOnly ? 'Low or out of stock' : this.q ? 'Search results' : 'All products';
         this.$('#sum-stats').innerHTML = [
           stat('Products', list.length),
           stat('Units in stock', units),
