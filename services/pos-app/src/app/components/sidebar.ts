@@ -1,8 +1,8 @@
-// <mocho-sidebar>: primary view navigation.
+// <mocho-sidebar>: primary view navigation, filtered by permission.
 
 import { MochoElement } from '../element.ts';
 import { icon } from '../icons.ts';
-import { VIEWS } from '../nav.ts';
+import { visibleViews } from '../nav.ts';
 import { store } from '../store.ts';
 
 export class MochoSidebar extends MochoElement {
@@ -16,8 +16,8 @@ export class MochoSidebar extends MochoElement {
   update(): void {
     const item = 'flex flex-1 xl:flex-none cursor-pointer flex-col items-center gap-1 rounded-md px-2 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-2 xl:flex-row xl:gap-3 xl:px-3 xl:py-2.5 xl:text-sm aria-[current=page]:bg-accent aria-[current=page]:text-foreground';
     this.innerHTML = `
-        <nav class="flex h-full gap-1 p-2 xl:flex-col xl:p-4" aria-label="Main">
-          ${VIEWS.map((v) => `
+        <nav class="hide-scrollbar flex h-full w-full gap-1 overflow-x-auto overflow-y-hidden p-2 xl:flex-col xl:overflow-visible xl:p-4" aria-label="Main">
+          ${visibleViews().map((v) => `
             <button data-view="${v.id}" class="${item}" ${store.view === v.id ? 'aria-current="page"' : ''}>
               ${icon(v.icon)}<span>${v.label}</span>
             </button>`).join('')}

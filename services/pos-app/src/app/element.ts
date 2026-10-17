@@ -1,6 +1,7 @@
 // Base element: light DOM so Tailwind utilities and design tokens apply everywhere.
 // Subclasses implement build() once and update() on every store change.
 
+import { auth } from './auth.ts';
 import { store } from './store.ts';
 
 export class MochoElement extends HTMLElement {
@@ -20,6 +21,8 @@ export class MochoElement extends HTMLElement {
   build?(): void;
   update?(): void;
   $(sel: string): Element | null { return this.querySelector(sel); }
+  $$(sel: string): Element[] { return [...this.querySelectorAll(sel)]; }
+  can(action: string): boolean { return auth.can(action); }
   togglePanel(sel: string, id: string): void {
     const el = this.$(sel);
     if (!el) return;

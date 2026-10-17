@@ -143,6 +143,24 @@
               '';
             }
             {
+              name = "uitest";
+              category = "monorepo";
+              help = "Verify each service's front-end store, auth and permissions";
+              command = ''
+                rc=0
+                for dir in "$PRJ_ROOT"/services/*/; do
+                  name="$(basename "$dir")"
+                  if [ -f "$dir/test/verify-ui.ts" ]; then
+                    echo "==> $name"
+                    if ! node --no-warnings "$dir/test/verify-ui.ts"; then
+                      rc=1
+                    fi
+                  fi
+                done
+                test "$rc" -eq 0
+              '';
+            }
+            {
               name = "apitest";
               category = "monorepo";
               help = "Run every service's api.http via httpyac (needs services running)";
@@ -193,6 +211,7 @@
             echo " Install:     install"
             echo " Tests:       apitest"
             echo " DB tests:    dbtest"
+            echo " UI tests:    uitest"
             echo "------------------------------------------------------------"
           '';
         };
