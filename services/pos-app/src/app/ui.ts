@@ -68,7 +68,7 @@ export interface Column<T> {
 }
 
 export const table = <T>(columns: Column<T>[], rows: T[], emptyRow?: string): string => `
-  <div class="hide-scrollbar overflow-auto rounded-xl border border-border bg-card">
+  <div class="w-max min-w-full overflow-clip rounded-xl border border-border bg-card">
     <table class="w-full text-sm">
       <thead class="text-left text-muted-foreground">
         <tr>${columns.map((c) => `
