@@ -11,9 +11,9 @@ export class MochoInventory extends MochoElement {
   build(): void {
     this.className = 'block h-full';
     this.innerHTML = `
-        <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
-          <section class="min-h-0 flex-col lg:flex" aria-label="Inventory">
-            <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
+        <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_24rem]">
+          <section class="min-h-0 flex-col xl:flex" aria-label="Inventory">
+            <div class="flex flex-col gap-4 p-4 xl:p-6 xl:pb-4">
               <header class="flex flex-wrap items-center justify-between gap-3">
                 <h1 class="text-2xl font-semibold tracking-tight">Inventory</h1>
                 <button id="add" class="btn btn-primary">${icon('plus', 'size-4')}Add product</button>
@@ -27,7 +27,7 @@ export class MochoInventory extends MochoElement {
                 <button id="low" class="chip" aria-pressed="false"></button>
               </div>
             </div>
-            <div class="min-h-0 flex-1 px-4 pb-4 md:px-6 md:pb-6">
+            <div class="min-h-0 flex-1 px-4 pb-4 xl:px-6 xl:pb-6">
               <div class="hide-scrollbar h-full overflow-auto rounded-xl border border-border bg-card">
                 <table class="w-full text-sm">
                   <thead class="text-left text-muted-foreground">
@@ -43,7 +43,7 @@ export class MochoInventory extends MochoElement {
               </div>
             </div>
           </section>
-          <aside class="min-h-0 flex-col bg-card lg:flex lg:border-l lg:border-border" aria-label="Overview">
+          <aside class="min-h-0 flex-col bg-card xl:flex xl:border-l xl:border-border" aria-label="Overview">
             <header class="border-b border-border p-5">
               <h2 class="text-base font-semibold tracking-tight">Overview</h2>
               <p id="inv-scope" class="mt-0.5 text-xs text-muted-foreground"></p>

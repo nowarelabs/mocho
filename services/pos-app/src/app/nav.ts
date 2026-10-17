@@ -27,4 +27,4 @@ export const PANELS: Record<string, Panel[]> = {
   reports: [{ id: 'main', label: 'Report' }, { id: 'side', label: 'Summary' }],
 };
 
-export const panelClass = (id: string): string => `${store.panel === id ? 'flex' : 'hidden lg:flex'} min-h-0 flex-col`;
+export const panelClass = (id: string): string => `${store.panel === id ? 'flex' : 'hidden xl:flex'} min-h-0 flex-col`;

@@ -50,9 +50,9 @@ export class MochoReports extends MochoElement {
     const kpi = (label: string, value: string | number): string => `<div class="p-5"><p class="text-sm text-muted-foreground">${label}</p><p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">${value}</p></div>`;
     const best = buckets.reduce((a, b) => (b.value > a.value ? b : a), buckets[0]);
     this.innerHTML = `
-        <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_24rem]">
           <section class="${panelClass('main')}" aria-label="Reports">
-            <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
+            <div class="flex flex-col gap-4 p-4 xl:p-6 xl:pb-4">
               <header class="flex flex-wrap items-center justify-between gap-3">
                 <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
                 <div class="flex gap-2" role="group" aria-label="Date range">
@@ -61,8 +61,8 @@ export class MochoReports extends MochoElement {
                 </div>
               </header>
             </div>
-            <div class="hide-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6">
-              <div class="grid grid-cols-2 divide-border rounded-xl border border-border bg-card md:grid-cols-4 md:divide-x [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(-n+2)]:border-border md:[&>*]:border-b-0 [&>*:nth-child(odd)]:border-r [&>*:nth-child(odd)]:border-border md:[&>*:nth-child(odd)]:border-r-0">
+            <div class="hide-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto px-4 pb-4 xl:px-6 xl:pb-6">
+              <div class="grid grid-cols-2 divide-border rounded-xl border border-border bg-card xl:grid-cols-4 xl:divide-x [&>*:nth-child(-n+2)]:border-b [&>*:nth-child(-n+2)]:border-border xl:[&>*]:border-b-0 [&>*:nth-child(odd)]:border-r [&>*:nth-child(odd)]:border-border xl:[&>*:nth-child(odd)]:border-r-0">
                 ${kpi('Net sales', money(sales))}${kpi('Orders', paid.length)}${kpi('Average order', money(avg))}${kpi('Items sold', items)}
               </div>
               <section class="rounded-xl border border-border bg-card p-5">
@@ -85,7 +85,7 @@ export class MochoReports extends MochoElement {
               </section>
             </div>
           </section>
-          <aside class="${panelClass('side')} bg-card lg:border-l lg:border-border" aria-label="Summary">
+          <aside class="${panelClass('side')} bg-card xl:border-l xl:border-border" aria-label="Summary">
             <header class="border-b border-border p-5">
               <h2 class="text-base font-semibold tracking-tight">Summary</h2>
               <p class="mt-0.5 text-xs text-muted-foreground">${isToday ? 'Today' : 'Last 7 days'}</p>

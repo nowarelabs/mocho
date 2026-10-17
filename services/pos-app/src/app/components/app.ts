@@ -9,7 +9,7 @@ export class MochoApp extends MochoElement {
     this.className = 'flex h-dvh w-full flex-col';
     this.innerHTML = `
         <mocho-appbar></mocho-appbar>
-        <div class="flex min-h-0 flex-1 flex-col-reverse md:flex-row">
+        <div class="flex min-h-0 flex-1 flex-col-reverse xl:flex-row">
           <mocho-sidebar></mocho-sidebar>
           <mocho-paneltabs></mocho-paneltabs>
           <main class="hide-scrollbar min-h-0 min-w-0 flex-1 overflow-hidden bg-muted dark:bg-background">

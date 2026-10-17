@@ -11,9 +11,9 @@ export class MochoRegister extends MochoElement {
   build(): void {
     this.className = 'block h-full';
     this.innerHTML = `
-        <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
-          <section class="min-h-0 flex-col lg:flex" aria-label="Products">
-            <div class="flex flex-col gap-4 p-4 md:p-6 lg:pb-4">
+        <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_24rem]">
+          <section class="min-h-0 flex-col xl:flex" aria-label="Products">
+            <div class="flex flex-col gap-4 p-4 xl:p-6 xl:pb-4">
               <header class="flex flex-wrap items-center justify-between gap-3">
                 <h1 class="text-2xl font-semibold tracking-tight">Register</h1>
                 <label class="relative w-full sm:w-72">
@@ -24,11 +24,11 @@ export class MochoRegister extends MochoElement {
               </header>
               <div id="cats" class="hide-scrollbar flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Categories"></div>
             </div>
-            <div class="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6">
+            <div class="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 pb-4 xl:px-6 xl:pb-6">
               <div id="grid" class="grid grid-cols-2 content-start gap-3 sm:grid-cols-3 xl:grid-cols-4"></div>
             </div>
           </section>
-          <mocho-cart id="cart" class="min-h-0 flex-col bg-card lg:flex lg:border-l lg:border-border"></mocho-cart>
+          <mocho-cart id="cart" class="min-h-0 flex-col bg-card xl:flex xl:border-l xl:border-border"></mocho-cart>
         </div>`;
     (this.$('#q') as HTMLInputElement).addEventListener('input', (e) => { this.q = (e.target as HTMLInputElement).value.trim().toLowerCase(); this.renderGrid(); });
     this.addEventListener('click', (e) => {

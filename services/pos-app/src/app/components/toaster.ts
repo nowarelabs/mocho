@@ -6,7 +6,7 @@ import { store } from '../store.ts';
 export class MochoToaster extends MochoElement {
   live = false;
   build(): void {
-    this.className = 'pointer-events-none fixed right-4 bottom-32 z-50 flex flex-col items-end gap-2 md:right-6 md:bottom-6';
+    this.className = 'pointer-events-none fixed right-4 bottom-32 z-50 flex flex-col items-end gap-2 xl:right-6 xl:bottom-6';
     this.setAttribute('aria-live', 'polite');
     store.addEventListener('toast', (e) => {
       const t = document.createElement('div');

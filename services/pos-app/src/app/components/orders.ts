@@ -23,9 +23,9 @@ export class MochoOrders extends MochoElement {
     const hourCls = 'h-9 w-24 cursor-pointer appearance-none rounded-md border border-input bg-background px-3 pr-9 text-sm focus-visible:outline-2';
     const fieldLabel = 'flex flex-col gap-1 text-xs font-medium text-muted-foreground';
     this.innerHTML = `
-        <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_24rem]">
-          <section class="min-h-0 flex-col lg:flex" aria-label="Orders">
-            <div class="flex flex-col gap-3 p-4 md:p-6 lg:pb-4">
+        <div class="grid h-full grid-cols-1 grid-rows-1 overflow-hidden xl:grid-cols-[minmax(0,1fr)_24rem]">
+          <section class="min-h-0 flex-col xl:flex" aria-label="Orders">
+            <div class="flex flex-col gap-3 p-4 xl:p-6 xl:pb-4">
               <header class="flex flex-wrap items-center justify-between gap-3">
                 <h1 class="text-2xl font-semibold tracking-tight">Orders</h1>
                 <div id="filters" class="flex gap-2" role="group" aria-label="Filter orders by status"></div>
@@ -42,7 +42,7 @@ export class MochoOrders extends MochoElement {
                 </button>
               </div>
               <div id="adv-filters" class="hidden flex-col gap-3 rounded-xl border border-border bg-card p-4" role="group" aria-label="Advanced filters">
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <label class="${fieldLabel}">From date
                     <input id="date-from" name="date-from" type="date" class="${dateCls}" />
                   </label>
@@ -67,9 +67,9 @@ export class MochoOrders extends MochoElement {
                 </div>
               </div>
             </div>
-            <div id="list" class="hide-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4 md:px-6 md:pb-6"></div>
+            <div id="list" class="hide-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4 xl:px-6 xl:pb-6"></div>
           </section>
-          <aside class="min-h-0 flex-col bg-card lg:flex lg:border-l lg:border-border" aria-label="Summary">
+          <aside class="min-h-0 flex-col bg-card xl:flex xl:border-l xl:border-border" aria-label="Summary">
             <header class="border-b border-border p-5">
               <h2 class="text-base font-semibold tracking-tight">Summary</h2>
               <p id="sum-scope" class="mt-0.5 text-xs text-muted-foreground"></p>

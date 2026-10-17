@@ -6,7 +6,7 @@ import { store } from '../store.ts';
 
 export class MochoPanelTabs extends MochoElement {
   build(): void {
-    this.className = 'shrink-0 border-t border-sidebar-border bg-sidebar md:hidden';
+    this.className = 'shrink-0 border-t border-sidebar-border bg-sidebar xl:hidden';
     this.addEventListener('click', (e) => {
       const t = (e.target as HTMLElement).closest('[data-panel]');
       if (t) store.setPanel((t as HTMLElement).dataset.panel!);

@@ -6,7 +6,7 @@ import { icon } from '../icons.ts';
 export class MochoAppbar extends MochoElement {
   live = false;
   build(): void {
-    this.className = 'flex shrink-0 items-center justify-between gap-3 border-b border-sidebar-border bg-sidebar px-4 py-3 md:px-6';
+    this.className = 'flex shrink-0 items-center justify-between gap-3 border-b border-sidebar-border bg-sidebar px-4 py-3 xl:px-6';
     this.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('[data-theme]')) {
         const dark = document.documentElement.classList.toggle('dark');
