@@ -18,3 +18,10 @@ GET http://127.0.0.1:3000/app.js
 ?? status equals 200
 ?? header content-type includes text/javascript
 ?? body includes capnweb
+
+### bundled pos ui
+GET http://127.0.0.1:3000/ui.js
+
+?? status equals 200
+?? header content-type includes text/javascript
+?? body includes mocho-app

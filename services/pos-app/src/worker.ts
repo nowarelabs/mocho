@@ -1,6 +1,8 @@
-// `app.js` and `index.html` are workerd `text` modules (see workerd.capnp).
-// `app.js` is the browser bundle produced by `pnpm build:client`.
+// `app.js`, `ui.js` and `index.html` are workerd `text` modules (see
+// workerd.capnp). `app.js` is the browser bundle produced by
+// `pnpm build:client`; `ui.js` is the POS UI bundle produced by `pnpm build:ui`.
 import appJs from "app.js";
+import uiJs from "ui.js";
 import indexHtml from "index.html";
 
 interface Env {
@@ -15,6 +17,12 @@ export default {
 
     if (url.pathname === "/app.js") {
       return new Response(appJs, {
+        headers: { "content-type": "text/javascript; charset=utf-8", ...NO_STORE },
+      });
+    }
+
+    if (url.pathname === "/ui.js") {
+      return new Response(uiJs, {
         headers: { "content-type": "text/javascript; charset=utf-8", ...NO_STORE },
       });
     }
